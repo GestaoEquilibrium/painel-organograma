@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Administrativo — Grupo Equilibrium</title>
+<style>
+  :root{
+    --deep:#14375A; --navy:#1F4E79; --teal:#2E75B6; --sky:#5B9BD5;
+    --ice:#9DC3E6; --frost:#DEEBF7; --paper:#EEF4FB; --line:#9BB6D2;
+    --ink:#1B2733; --muted:#5B6B7B; --white:#fff; --danger:#C0392B;
+    --ok:#1E8E5A; --warn:#B7791F; --purple:#6C5CE7;
+    --shadow:0 1px 2px rgba(20,55,90,.12),0 8px 22px rgba(20,55,90,.12);
+    --shadow-lg:0 20px 50px rgba(20,55,90,.28);
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden}
+  body{font-family:"Calibri","Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--paper);display:flex;flex-direction:column;height:100vh}
+
+  /* ---------- top bar ---------- */
+  button{font-family:inherit;cursor:pointer;border:0;border-radius:9px;font-size:13px}
+  .bar{background:linear-gradient(180deg,#255A92,#14375A);color:#fff;padding:11px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid rgba(255,255,255,.09);box-shadow:0 2px 12px rgba(20,55,90,.2);z-index:20}
+  .bar svg{width:16px;height:16px;display:block}
+  .logo{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;color:#BEE0F5;flex-shrink:0}
+  .logo svg{width:23px;height:23px}
+  .brand{display:flex;flex-direction:column;line-height:1.12}
+  .brand b{font-size:15.5px;font-weight:600;letter-spacing:.2px}
+  .brand span{font-size:11px;color:#A9C6E6;font-weight:400}
+  .divider{width:1px;height:28px;background:rgba(255,255,255,.16);flex-shrink:0}
+  .doc-title{min-width:170px;max-width:260px;background:transparent;border:1px solid transparent;color:#fff;font-size:14px;font-weight:600;padding:8px 12px;border-radius:9px;transition:background .12s,border-color .12s}
+  .doc-title:hover{background:rgba(255,255,255,.08)}
+  .doc-title:focus{outline:0;background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.3)}
+  .doc-title::placeholder{color:#bcd4ee}
+  .rightgrp{margin-left:auto;display:flex;align-items:center;gap:11px}
+  .seg{display:inline-flex;background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:3px;gap:2px}
+  .seg-b{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:8px;background:transparent;color:#cfe0f2;font-size:13px;font-weight:600;transition:background .12s,color .12s}
+  .seg-b:hover{color:#fff}
+  .seg-b.on{background:#fff;color:var(--navy)}
+  .acts{display:flex;align-items:center;gap:7px}
+  .ab{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-weight:600}
+  .ab:hover{background:rgba(255,255,255,.2)}
+  .ab.primary{background:#fff;color:var(--navy);border-color:#fff}
+  .ab.primary:hover{background:#e9f2fc}
+  .ab.only{padding:9px;width:38px;justify-content:center;color:#dbe8f7}
+  .ab.only:hover{color:#fff}
+
+  /* ---------- view toolbar ---------- */
+  .vbar{display:flex;align-items:center;gap:12px;padding:8px 20px;background:#fff;border-bottom:1px solid #e3ebf5;z-index:15}
+  .vbar svg{width:15px;height:15px;display:block}
+  .vseg{display:inline-flex;background:#eef3f9;border:1px solid #dbe6f2;border-radius:10px;padding:3px;gap:2px}
+  .vseg-b{display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:8px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600}
+  .vseg-b:hover{color:var(--navy)}
+  .vseg-b.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(20,55,90,.12)}
+  .vbar .vhint{font-size:11.5px;color:var(--muted)}
+
+  /* ---------- canvas ---------- */
+  .stage{position:relative;flex:1;overflow:hidden;background:radial-gradient(circle at 1px 1px,#d3e0f0 1px,transparent 0);background-size:28px 28px;cursor:grab}
+  .node.flash{animation:flash 1.7s ease}
+  @keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(242,184,7,0)}25%,55%{box-shadow:0 0 0 5px rgba(242,184,7,.6)}}
+
+  /* ---------- sheet (lista / unidade) ---------- */
+  .sheet{position:absolute;inset:0;overflow:auto;padding:26px 30px 60px;display:none}
+  .lcard{max-width:1000px;margin:0 auto 22px;background:#fff;border:1px solid #d3e0ef;border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .lhead{display:flex;align-items:center;gap:9px;padding:12px 16px;border-bottom:1px solid #eef2f8;background:#fbfdff}
+  .lhead .ic{width:26px;height:26px;border-radius:8px;background:var(--frost);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:15px}
+  .lhead b{font-size:14px;color:var(--navy)}
+  .lhead .tag{font-size:10px;color:var(--muted);background:#f1f5fa;border-radius:999px;padding:2px 8px;text-transform:uppercase;letter-spacing:.3px}
+  .lbody{padding:12px 18px}
+  .outline{list-style:none;margin:0;padding:0}
+  .outline .osub{margin-left:16px;border-left:2px solid #e6eef7;padding-left:14px;margin-top:2px}
+  .oi{display:flex;align-items:baseline;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer}
+  .oi:hover{background:#f4f8fc}
+  .oi .of{font-weight:700;font-size:13px;color:var(--navy)}
+  .oi .on{font-size:12px;color:var(--muted)}
+  .units{display:flex;gap:16px;flex-wrap:wrap;max-width:1120px;margin:0 auto;align-items:flex-start}
+  .ucol{flex:1 1 220px;min-width:210px;background:#fff;border:1px solid #d3e0ef;border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .uhead{background:var(--navy);color:#fff;padding:11px 15px;font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;align-items:center}
+  .uhead span{background:rgba(255,255,255,.22);border-radius:999px;padding:1px 9px;font-size:12px}
+  .ulist{padding:10px}
+  .ucard{padding:9px 12px;border-radius:9px;border:1px solid #eef2f8;margin-bottom:8px}
+  .ucard:last-child{margin-bottom:0}
+  .ucard b{display:block;font-size:13px;color:var(--ink)}
+  .ucard span{font-size:11.5px;color:var(--muted)}
+  .ucard.jump{cursor:pointer}
+  .ucard.jump:hover{border-color:var(--teal);background:#f7fafd}
+  .uempty{max-width:640px;margin:40px auto;text-align:center;color:var(--muted);font-size:13.5px;background:#fff;border:1px dashed #c4d3e5;border-radius:var(--r);padding:26px}
+  .plink{color:var(--teal);cursor:pointer;font-weight:600}.plink:hover{text-decoration:underline}
+  .reflink{color:var(--teal);cursor:pointer}.reflink:hover{text-decoration:underline}
+  .stage.grabbing{cursor:grabbing}
+  .world{position:absolute;top:0;left:0;transform-origin:0 0}
+
+  .zoombar{position:absolute;right:16px;bottom:16px;z-index:8;display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #d3e0ef;border-radius:11px;padding:5px 8px;box-shadow:var(--shadow)}
+  .zoombar button{width:30px;height:30px;background:var(--frost);color:var(--navy);font-size:17px;font-weight:700}
+  .zoombar span{font-size:12px;color:var(--muted);min-width:40px;text-align:center}
+  .hintbar{position:absolute;left:16px;bottom:16px;z-index:8;background:rgba(255,255,255,.9);border:1px solid #d3e0ef;border-radius:10px;padding:7px 12px;font-size:11.5px;color:var(--muted);max-width:52%}
+
+  /* ---------- module cards ---------- */
+  .mod{position:absolute;background:#fff;border:1px solid #d3e0ef;border-radius:var(--r);box-shadow:var(--shadow)}
+  .mod.sel{border-color:#F2B807;box-shadow:0 0 0 3px rgba(242,184,7,.32),var(--shadow)}
+  .mhead{display:flex;align-items:center;gap:9px;padding:10px 13px;border-bottom:1px solid #eef2f8;border-radius:var(--r) var(--r) 0 0;cursor:grab}
+  .mhead .ic{width:26px;height:26px;border-radius:8px;background:var(--frost);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .mhead b{font-size:13px;color:var(--navy);white-space:nowrap}
+  .mhead .tag{font-size:10px;color:var(--muted);background:#f1f5fa;border-radius:999px;padding:2px 8px;text-transform:uppercase;letter-spacing:.3px}
+  .mhead .mm{margin-left:auto;display:flex;gap:4px}
+  .mhead .mm button{width:26px;height:26px;background:transparent;color:var(--muted);font-size:15px;border-radius:7px}
+  .mhead .mm button:hover{background:#f1f5fa;color:var(--navy)}
+  .mbody{padding:16px 18px}
+
+  /* ---------- tree ---------- */
+  ul.tree,.tree ul{display:flex;justify-content:center;padding:0;margin:0;list-style:none}
+  .tree ul{padding-top:20px;position:relative}
+  .tree li{position:relative;padding:20px 8px 0;display:flex;flex-direction:column;align-items:center}
+  .tree li::before,.tree li::after{content:'';position:absolute;top:0;right:50%;border-top:2px solid var(--line);width:50%;height:20px}
+  .tree li::after{right:auto;left:50%;border-left:2px solid var(--line)}
+  .tree li:only-child::before,.tree li:only-child::after{display:none}
+  .tree li:first-child::before,.tree li:last-child::after{border:0}
+  .tree li:last-child::before{border-right:2px solid var(--line);border-radius:0 6px 0 0}
+  .tree li:first-child::after{border-radius:6px 0 0 0}
+  .tree ul::before{content:'';position:absolute;top:0;left:50%;border-left:2px solid var(--line);width:0;height:20px}
+  .node{border-radius:11px;padding:8px 12px;min-width:112px;max-width:176px;text-align:center;border:2px solid transparent;cursor:pointer;transition:transform .1s}
+  .node:hover{transform:translateY(-2px)}
+  .node.sel{border-color:#F2B807;box-shadow:0 0 0 3px rgba(242,184,7,.34)}
+  .node .r{font-weight:700;font-size:12.5px;line-height:1.18}
+  .node .n{font-size:11px;margin-top:3px;line-height:1.16;opacity:.95}
+  .node .n.empty{font-style:italic;opacity:.55}
+  .lv0{background:var(--deep);color:#fff}.lv1{background:var(--navy);color:#fff}.lv2{background:var(--teal);color:#fff}
+  .lv3{background:var(--sky);color:#fff}.lv4{background:var(--ice);color:var(--deep)}.lv5{background:var(--frost);color:var(--deep)}
+  .lv0 .n,.lv1 .n,.lv2 .n,.lv3 .n{color:#e6f0fb}
+
+  /* ---------- table ---------- */
+  table.tbl{border-collapse:collapse;font-size:12.5px;min-width:340px}
+  table.tbl th{text-align:left;color:var(--navy);font-weight:700;padding:8px 13px;border-bottom:2px solid var(--frost);white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:.3px;cursor:default}
+  table.tbl th.editable{cursor:pointer}
+  table.tbl th.editable:hover{background:#f7fafd}
+  table.tbl td{padding:9px 13px;border-bottom:1px solid #f0f4f9;white-space:nowrap;cursor:pointer}
+  table.tbl tr:hover td{background:#f7fafd}
+  table.tbl td.emptyc{color:#b3c0cf;font-style:italic}
+  .selo{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;display:inline-block}
+  .sv-verde{background:#e7f6ee;color:var(--ok)}.sv-ambar{background:#fff5e6;color:var(--warn)}
+  .sv-vermelho{background:#fdecea;color:var(--danger)}.sv-azul{background:#e6f1fb;color:var(--navy)}.sv-cinza{background:#eef1f5;color:var(--muted)}
+  .link-c{color:var(--teal);text-decoration:none}.link-c:hover{text-decoration:underline}
+  .tadd{display:flex;gap:8px;padding:11px 13px 3px}
+  .tadd button{font-size:12px;padding:7px 12px;border-radius:9px;background:var(--frost);color:var(--navy);font-weight:600}
+  .tadd button:hover{background:#cfe1f5}
+  .tempty{padding:22px 14px;text-align:center;color:var(--muted);font-size:12.5px}
+
+  /* ---------- ghost / add ---------- */
+  .ghost{position:absolute;width:210px;height:140px;border:2px dashed #b9cbe0;border-radius:var(--r);background:rgba(255,255,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted);cursor:pointer}
+  .ghost:hover{border-color:var(--teal);color:var(--teal);background:#fff}
+  .ghost .p{font-size:30px;line-height:1}.ghost small{font-size:12px;font-weight:600}
+
+  /* ---------- tooltip ---------- */
+  .tip{position:absolute;z-index:30;background:var(--deep);color:#fff;border-radius:10px;padding:8px 12px;font-size:11.5px;max-width:230px;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:var(--shadow-lg)}
+  .tip b{display:block;font-size:12.5px;margin-bottom:2px}.tip span{color:#bcd4ee}
+
+  /* ---------- right panel ---------- */
+  .panel{position:absolute;top:0;right:0;height:100%;width:330px;background:#fff;box-shadow:-8px 0 24px rgba(20,55,90,.16);transform:translateX(100%);transition:transform .18s ease;z-index:25;display:flex;flex-direction:column}
+  .panel.open{transform:translateX(0)}
+  .panel header{background:var(--navy);color:#fff;padding:15px 18px;display:flex;justify-content:space-between;align-items:center}
+  .panel header b{font-size:15px}
+  .panel .close{background:transparent;color:#fff;font-size:20px;width:28px;height:28px}
+  .panel .pbody{padding:18px;overflow:auto;flex:1}
+  .field{margin-bottom:15px}
+  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;padding:9px 11px;border:1.5px solid #cdd9e8;border-radius:9px;font-family:inherit;font-size:14px;color:var(--ink);background:#fff}
+  .field textarea{min-height:74px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 3px rgba(46,117,182,.15)}
+  .field .chk{display:flex;align-items:center;gap:9px}
+  .field .chk input{width:auto}
+  .grp .lbl{font-size:11.5px;font-weight:700;color:var(--muted);margin:6px 0 8px;text-transform:uppercase;letter-spacing:.4px}
+  .pbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pbtn{padding:10px;background:var(--frost);color:var(--navy);font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px}
+  .pbtn:hover{background:#cfe1f5}
+  .pbtn.wide{grid-column:1/3}
+  .pbtn.del{background:#fdecea;color:var(--danger)}.pbtn.del:hover{background:#f9d7d2}
+  .pbtn.save{background:var(--navy);color:#fff}.pbtn.save:hover{background:var(--deep)}
+  .pbtn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* ---------- modal ---------- */
+  .overlay{position:absolute;inset:0;background:rgba(20,55,90,.42);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
+  .overlay.open{display:flex}
+  .modal{width:360px;max-width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .modal .mh{background:var(--navy);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-start}
+  .modal .mh b{font-size:16px}.modal .mh small{font-size:11.5px;color:#bcd4ee;display:block;margin-top:2px}
+  .modal .mh .x{background:transparent;border:0;color:#fff;font-size:21px;cursor:pointer;line-height:1}
+  .modal .mbd{padding:16px 20px;max-height:52vh;overflow:auto}
+  .drow{display:flex;padding:8px 0;border-bottom:1px solid #f0f4f9;font-size:13px}
+  .drow:last-child{border:0}
+  .drow .k{color:var(--muted);width:104px;flex-shrink:0}.drow .v{color:var(--ink)}
+
+  /* ---------- toast ---------- */
+  .toast{position:absolute;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--deep);color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.2s;z-index:50}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .ro .pbtns,.ro .field input,.ro .field select,.ro .field textarea{display:none}
+
+  /* ---------- status pill (nuvem) ---------- */
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;margin-left:auto}
+  .pill .dot{width:8px;height:8px;border-radius:50%}
+  .pill.local{background:#eef1f5;color:var(--muted)}.pill.local .dot{background:#9aa7b4}
+  .pill.saving{background:#fff5e6;color:var(--warn)}.pill.saving .dot{background:var(--warn);animation:pulse 1s infinite}
+  .pill.ok{background:#e7f6ee;color:var(--ok)}.pill.ok .dot{background:var(--ok)}
+  .pill.offline{background:#fdecea;color:var(--danger)}.pill.offline .dot{background:var(--danger)}
+  @keyframes pulse{50%{opacity:.35}}
+
+  /* ---------- relatório (PDF) ---------- */
+  #report{display:none;background:#fff;color:var(--ink);font-family:"Calibri","Segoe UI",sans-serif}
+  body.printing{overflow:auto}
+  body.printing .bar,body.printing .vbar,body.printing .stage,body.printing .panel,body.printing .overlay,body.printing .toast{display:none !important}
+  body.printing #report{display:block;width:1010px;margin:0 auto;padding:10px 5px}
+  .rep-cover{height:184mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .rep-logo{width:66px;height:66px;border-radius:17px;background:var(--navy);color:#BEE0F5;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .rep-logo svg{width:38px;height:38px}
+  .rep-brand{font-size:30px;font-weight:700;color:var(--navy);letter-spacing:.5px}
+  .rep-sub{font-size:13px;color:var(--muted);margin-top:4px}
+  .rep-title{font-size:19px;color:var(--ink);margin-top:22px;font-weight:600}
+  .rep-meta{font-size:12px;color:var(--muted);margin-top:6px}
+  .rep-section{margin:0 0 22px}
+  .rep-h{font-size:16px;font-weight:700;color:var(--navy);border-bottom:2px solid var(--frost);padding-bottom:6px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .rep-h .rt{font-size:10px;color:var(--muted);background:#f1f5fa;border-radius:999px;padding:2px 9px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+  .rep-treewrap{transform-origin:top center}
+  #report table.tbl{width:100%;min-width:0}
+  #report .tbl th{font-size:10.5px}
+  #report .tbl td{font-size:12px}
+  .rep-units{display:flex;gap:14px;flex-wrap:wrap}
+  .rep-units .ucol{flex:1 1 210px;box-shadow:none;border:1px solid #d9e4f0}
+
+  @media print{
+    @page{size:A4 landscape;margin:14mm}
+    .bar,.vbar,.stage,.panel,.overlay,.toast{display:none !important}
+    #report{display:block !important;width:auto !important;margin:0 !important;padding:0 !important}
+    .rep-cover{page-break-after:always}
+    .rep-section{page-break-inside:avoid}
+    .rep-section.tbl-sec{page-break-inside:auto}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M6.5 21h11"/><path d="M4 7.5h16"/><path d="M4 7.5l-2.2 4.4a2.6 2.6 0 0 0 5.2 0z"/><path d="M20 7.5l-2.2 4.4a2.6 2.6 0 0 0 5.2 0z"/></svg></div>
+    <div class="brand"><b>Grupo Equilibrium</b><span>Painel administrativo interno</span></div>
+    <div class="divider"></div>
+    <input id="docTitle" class="doc-title" placeholder="Título do painel">
+    <div class="rightgrp">
+      <div class="seg" role="tablist">
+        <button class="seg-b on" data-mode="ver" onclick="setMode('ver')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Visualizar</button>
+        <button class="seg-b" data-mode="editar" onclick="setMode('editar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Editar</button>
+      </div>
+      <div class="divider"></div>
+      <div class="acts">
+        <button class="ab primary" onclick="novoModulo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Novo módulo</button>
+        <button class="ab" onclick="gerarPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>PDF</button>
+        <button class="ab only" title="Exportar (.json)" aria-label="Exportar" onclick="exportJSON()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></button>
+        <button class="ab only" title="Importar (.json)" aria-label="Importar" onclick="document.getElementById('imp').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/></svg></button>
+        <button class="ab only" title="Restaurar padrão" aria-label="Restaurar" onclick="restaurar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg></button>
+        <input id="imp" type="file" accept="application/json" style="display:none" onchange="importJSON(event)">
+      </div>
+    </div>
+  </div>
+
+  <div class="vbar">
+    <div class="vseg" role="tablist">
+      <button class="vseg-b on" data-view="mapa" onclick="setView('mapa')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>Mapa</button>
+      <button class="vseg-b" data-view="lista" onclick="setView('lista')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>Lista</button>
+      <button class="vseg-b" data-view="unidade" onclick="setView('unidade')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Por unidade</button>
+    </div>
+    <span class="vhint" id="vhint"></span>
+    <span id="statusPill" class="pill local" onclick="syncNow()" title="Clique para sincronizar"><span class="dot"></span><span id="statusText">Somente neste navegador</span></span>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="world" id="world"></div>
+    <div class="sheet" id="sheet"></div>
+    <div class="tip" id="tip"></div>
+    <div class="hintbar" id="hintbar"></div>
+    <div class="zoombar">
+      <button onclick="zoomBtn(-1)" aria-label="Diminuir">−</button>
+      <span id="zlbl">100%</span>
+      <button onclick="zoomBtn(1)" aria-label="Aumentar">+</button>
+    </div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <header><b id="panelTitle">Editar</b><button class="close" onclick="closePanel()">×</button></header>
+    <div class="pbody" id="panelBody"></div>
+  </aside>
+
+  <div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div id="report"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   MODELO DE DADOS
+   workspace → modulos → (organograma | tabela)
+   ============================================================ */
+const LKEY = "painel_equilibrium_v2";
+
+/* ============================================================
+   CONFIGURAÇÃO DA NUVEM (Supabase) — opcional
+   Cole os valores do seu projeto (Settings → API).
+   Enquanto url/key estiverem vazios, funciona só neste navegador.
+   'senha' liga o portão de edição (quem só lê não precisa dela).
+   ============================================================ */
+const CLOUD = {
+  url:  "https://hzddjcsiprvhaunjukao.supabase.co/rest/v1/",          // ex.: "https://xxxx.supabase.co"
+  key:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6ZGRqY3NpcHJ2aGF1bmp1a2FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MDY0NjIsImV4cCI6MjA5ODQ4MjQ2Mn0.3hvLxDTy-ABJ6ZDkWLxlp0Nu2p7BhfGK2w_F0qc2xrE",          // chave anon public
+  doc:  "default",   // id do documento (permite mais de um painel)
+  senha:""           // senha de edição (deixe vazio para não exigir)
+};
+function cloudReady(){ return !!(CLOUD.url && CLOUD.key); }
+
+const FIELD_TYPES = [
+  {id:"texto",       nome:"Texto"},
+  {id:"textolongo",  nome:"Texto longo"},
+  {id:"numero",      nome:"Número"},
+  {id:"moeda",       nome:"Moeda (R$)"},
+  {id:"porcentagem", nome:"Porcentagem"},
+  {id:"data",        nome:"Data"},
+  {id:"telefone",    nome:"Telefone"},
+  {id:"selecao",     nome:"Seleção"},
+  {id:"selo",        nome:"Selo (status)"},
+  {id:"simnao",      nome:"Sim / Não"},
+  {id:"pessoa",      nome:"Pessoa (vínculo)"},
+  {id:"link",        nome:"Anexo / link"},
+];
+const SELO_CORES = ["verde","ambar","vermelho","azul","cinza"];
+
+function uid(){ return "x"+Math.random().toString(36).slice(2,9); }
+
+function defaultWorkspace(){
+  const on=(id,funcao,integrantes,filhos)=>({id,funcao,integrantes:integrantes||"",unidade:"",registro:"",descricao:"",filhos:filhos||[]});
+  const org = {
+    id:uid(), tipo:"organograma", nome:"Organograma institucional", pos:{x:80,y:60},
+    raiz: on("conselho","Conselho de Sócios Equilibrium","Wessilon Marques • Michele Marques",[
+      on("dir","Diretoria Executiva","Wessilon (Dir. Clínico-Adm.) • Michele (Co-diretora)",[
+        on("atend","Gerência de Atendimento","Guilherme (a confirmar)",[
+          on("tel","Atendimento Telemático","",[on("tela","Ativo"),on("telr","Receptivo")]),
+          on("pres","Atendimento Presencial","",[on("presa","Ativo"),on("presr","Receptivo")]),
+        ]),
+        on("fin","Gerência Financeira","",[
+          on("tes","Tesouraria"),on("fat","Faturamento"),on("com","Compras"),
+          on("cpr","Contas a Pagar e Receber"),on("ban","Bancos"),
+        ]),
+        on("clin","Gerência Clínica","Niela Paixão",[
+          on("neuro","Neuropsicologia","",[
+            on("apl1","Neuropsicólogo(a) Aplicador(a)","Pâmela"),
+            on("apl2","Neuropsicólogo(a) Aplicador(a)","Emily"),
+            on("apl3","Neuropsicólogo(a) Aplicador(a)","Karolina"),
+            on("apl4","Neuropsicólogo(a) Aplicador(a)","Taís"),
+            on("est1","Estagiária","Mariana"),on("est2","Estagiária","Natália"),
+          ]),
+          on("psic","Psicologia (clínica)"),
+          on("med","Área Médica","",[on("psiq","Psiquiatria","Dr. Luan"),on("ger","Geriatria"),on("cg","Clínico Geral")]),
+        ]),
+        on("terap","Gerência Terapêutica","",[
+          on("ter","Terapias","",[on("aba","ABA","",[on("abae","Estagiário(a)")])]),
+          on("fono","Fonoaudiologia"),on("psped","Psicopedagogia"),
+          on("psict","Psicologia (terapêutica)"),on("to","Terapia Ocupacional"),
+        ]),
+      ]),
+    ])
+  };
+  org.raiz.unidade="Institucional";
+  const tabela = {
+    id:uid(), tipo:"tabela", nome:"Corpo clínico", pos:{x:80,y:560},
+    colunas:[
+      {id:"c_nome", nome:"Nome",     tipo:"texto",  opcoes:[]},
+      {id:"c_vinc", nome:"Vínculo",  tipo:"pessoa", opcoes:[]},
+      {id:"c_func", nome:"Função",   tipo:"selecao",opcoes:["Diretoria","Coordenação","Aplicador(a)","Psiquiatra","Estagiário(a)"]},
+      {id:"c_reg",  nome:"Registro", tipo:"texto",  opcoes:[]},
+      {id:"c_uni",  nome:"Unidade",  tipo:"selecao",opcoes:["EQ1","EQ2"]},
+      {id:"c_st",   nome:"Status",   tipo:"selo",   opcoes:[
+        {valor:"Ativo",cor:"verde"},{valor:"Consultor",cor:"ambar"},{valor:"Inativo",cor:"vermelho"}]},
+    ],
+    registros:[
+      {id:uid(),valores:{c_nome:"Wessilon Marques",c_vinc:"conselho",c_func:"Diretoria",c_reg:"CRP-04/53832",c_uni:"EQ1",c_st:"Ativo"}},
+      {id:uid(),valores:{c_nome:"Niela Paixão",c_vinc:"clin",c_func:"Coordenação",c_reg:"",c_uni:"EQ1",c_st:"Ativo"}},
+      {id:uid(),valores:{c_nome:"Pâmela",c_vinc:"apl1",c_func:"Aplicador(a)",c_reg:"",c_uni:"EQ1",c_st:"Ativo"}},
+      {id:uid(),valores:{c_nome:"Dr. Luan",c_vinc:"psiq",c_func:"Psiquiatra",c_reg:"CRM —",c_uni:"EQ1",c_st:"Consultor"}},
+      {id:uid(),valores:{c_nome:"Mariana",c_vinc:"est1",c_func:"Estagiário(a)",c_reg:"",c_uni:"EQ2",c_st:"Ativo"}},
+    ],
+  };
+  return { meta:{titulo:"Painel — Grupo Equilibrium 2026", versao:1, atualizado_em:new Date().toISOString()}, modulos:[org,tabela] };
+}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let ws, mode="ver", view="mapa", zoom=1, tx=30, ty=20;
+let sel = null;  // {tipo:'node'|'record'|'column'|'module', modId, ...}
+let needsAutolayout=false, unlocked=false, saveT;
+
+/* ---------- persistência local ---------- */
+function loadLocal(){ try{const s=localStorage.getItem(LKEY); if(s){ws=JSON.parse(s);return;}}catch(e){} ws=defaultWorkspace(); needsAutolayout=true; }
+
+/* ---------- nuvem (Supabase REST) ---------- */
+function chdr(extra){ return Object.assign({apikey:CLOUD.key,Authorization:"Bearer "+CLOUD.key,"Content-Type":"application/json"},extra||{}); }
+async function cloudLoad(){ const r=await fetch(CLOUD.url+"/rest/v1/painel?id=eq."+encodeURIComponent(CLOUD.doc)+"&select=title,data,updated_at",{headers:chdr()}); if(!r.ok)throw new Error("HTTP "+r.status); const rows=await r.json(); return rows[0]||null; }
+async function cloudSave(){ const body=[{id:CLOUD.doc,title:ws.meta.titulo,data:ws,updated_at:new Date().toISOString()}]; const r=await fetch(CLOUD.url+"/rest/v1/painel?on_conflict=id",{method:"POST",headers:chdr({Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(body)}); if(!r.ok)throw new Error(await r.text()); }
+function setStatus(kind){ const map={local:["local","Somente neste navegador"],sync:["saving","Conectando…"],saving:["saving","Salvando…"],ok:["ok","Salvo na nuvem"],offline:["offline","Sem conexão — salvo aqui"]}; const [cls,txt]=map[kind]||map.local; const p=document.getElementById("statusPill"); if(!p)return; p.className="pill "+cls; document.getElementById("statusText").textContent=txt; }
+async function syncNow(){ if(!cloudReady()){ toast("Configure a nuvem no topo do arquivo (CLOUD.url e CLOUD.key)."); return; } setStatus("sync"); try{ const row=await cloudLoad(); if(row&&row.data){ ws=row.data; sel=null; try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} render(); closePanel(); } else { await cloudSave(); } setStatus("ok"); toast("Sincronizado"); }catch(e){ setStatus("offline"); toast("Não foi possível sincronizar."); } }
+async function initCloud(){ if(!cloudReady()){ setStatus("local"); return; } setStatus("sync"); try{ const row=await cloudLoad(); if(row&&row.data){ ws=row.data; needsAutolayout=false; try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} render(); } else { await cloudSave(); } setStatus("ok"); }catch(e){ setStatus("offline"); } }
+
+/* ---------- salvar (local + nuvem com debounce) ---------- */
+function save(){ ws.meta.atualizado_em=new Date().toISOString(); try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} if(!cloudReady())return; setStatus("saving"); clearTimeout(saveT); saveT=setTimeout(async()=>{ try{await cloudSave(); setStatus("ok");}catch(e){setStatus("offline");} },700); }
+function editLocked(){ return cloudReady() && CLOUD.senha && !unlocked; }
+
+/* ---------- lookups ---------- */
+function getModule(id){ return ws.modulos.find(m=>m.id===id); }
+function walk(node,fn,depth=0,parent=null){ fn(node,depth,parent); (node.filhos||[]).forEach(c=>walk(c,fn,depth+1,node)); }
+function findOrgNode(mod,id){ let res=null; walk(mod.raiz,(n,d,p)=>{ if(n.id===id)res={node:n,parent:p}; }); return res; }
+function personIndex(){ // id -> texto exibível (integrantes || função) — reatividade de exibição
+  const idx={};
+  ws.modulos.filter(m=>m.tipo==="organograma").forEach(m=>walk(m.raiz,n=>{ idx[n.id]=(n.integrantes||n.funcao); }));
+  return idx;
+}
+function personOptions(){ const opts=[]; ws.modulos.filter(m=>m.tipo==="organograma").forEach(m=>walk(m.raiz,n=>{ opts.push({id:n.id,label:(n.integrantes?n.integrantes+" — ":"")+n.funcao}); })); return opts; }
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  document.getElementById("docTitle").value=ws.meta.titulo;
+  document.querySelectorAll(".vseg-b").forEach(b=>b.classList.toggle("on",b.dataset.view===view));
+  const isMap=view==="mapa";
+  document.getElementById("world").style.display=isMap?"block":"none";
+  document.getElementById("sheet").style.display=isMap?"none":"block";
+  document.querySelector(".zoombar").style.display=isMap?"flex":"none";
+  document.getElementById("hintbar").style.display=isMap?"block":"none";
+  stage.style.cursor=isMap?"grab":"default";
+  document.getElementById("vhint").textContent = isMap?"":(view==="lista"?"Panorama linear — bom para leitura e impressão":"Quem atua em cada unidade — clique num nome para localizá-lo no mapa");
+  if(isMap) renderMap(); else renderSheet();
+}
+function renderMap(){
+  const world=document.getElementById("world"); world.innerHTML="";
+  ws.modulos.forEach(m=>world.appendChild(renderModule(m)));
+  if(mode==="editar") world.appendChild(renderGhost());
+  applyZoom();
+  document.getElementById("hintbar").textContent = mode==="editar"
+    ? "Modo edição · clique numa caixa/linha para editar · arraste o cabeçalho de um módulo para movê-lo · arraste o fundo para navegar"
+    : "Modo visualização · passe o mouse para o resumo, clique para os detalhes · arraste o cabeçalho para mover · arraste o fundo para navegar";
+}
+
+function renderModule(m){
+  const el=document.createElement("div"); el.className="mod"+(sel&&sel.tipo==="module"&&sel.modId===m.id?" sel":"");
+  el.style.left=m.pos.x+"px"; el.style.top=m.pos.y+"px"; el.dataset.mod=m.id;
+  const icon = m.tipo==="organograma" ? "▤" : "☰";
+  const head=document.createElement("div"); head.className="mhead"; head.dataset.handle="1";
+  head.innerHTML='<div class="ic">'+icon+'</div><b>'+esc(m.nome)+'</b><span class="tag">'+(m.tipo==="organograma"?"organograma":"tabela")+'</span>';
+  if(mode==="editar"){
+    const mm=document.createElement("div"); mm.className="mm";
+    mm.innerHTML='<button title="Renomear módulo" data-act="ren">✎</button><button title="Excluir módulo" data-act="delmod">🗑</button>';
+    head.appendChild(mm);
+  }
+  el.appendChild(head);
+  const body=document.createElement("div"); body.className="mbody";
+  if(m.tipo==="organograma"){ const ul=document.createElement("ul"); ul.className="tree"; ul.appendChild(renderNode(m,m.raiz,0)); body.appendChild(ul); }
+  else { body.appendChild(renderTable(m)); }
+  el.appendChild(body);
+  return el;
+}
+
+function renderNode(mod,node,depth){
+  const li=document.createElement("li");
+  const card=document.createElement("div");
+  const isSel=sel&&sel.tipo==="node"&&sel.nodeId===node.id;
+  card.className="node lv"+Math.min(depth,5)+(isSel?" sel":"");
+  card.dataset.mod=mod.id; card.dataset.node=node.id;
+  card.innerHTML='<div class="r">'+esc(node.funcao||"(sem função)")+'</div><div class="n'+(node.integrantes?"":" empty")+'">'+esc(node.integrantes||"— definir —")+'</div>';
+  li.appendChild(card);
+  if(node.filhos&&node.filhos.length){ const ul=document.createElement("ul"); node.filhos.forEach(c=>ul.appendChild(renderNode(mod,c,depth+1))); li.appendChild(ul); }
+  return li;
+}
+
+function renderTable(m){
+  const wrap=document.createElement("div");
+  if(mode==="editar"){
+    const add=document.createElement("div"); add.className="tadd";
+    add.innerHTML='<button data-act="addreg">＋ Registro</button><button data-act="addcol">＋ Coluna</button>';
+    wrap.appendChild(add);
+  }
+  const t=document.createElement("table"); t.className="tbl"; t.dataset.mod=m.id;
+  const thead=document.createElement("thead"); const trh=document.createElement("tr");
+  m.colunas.forEach(c=>{ const th=document.createElement("th"); th.textContent=c.nome; if(mode==="editar"){th.className="editable";th.dataset.col=c.id;th.title="Editar coluna";} trh.appendChild(th); });
+  thead.appendChild(trh); t.appendChild(thead);
+  const tb=document.createElement("tbody");
+  if(!m.registros.length){ const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=m.colunas.length; td.className="tempty"; td.textContent="Sem registros ainda."; tr.appendChild(td); tb.appendChild(tr); }
+  m.registros.forEach(reg=>{
+    const tr=document.createElement("tr"); tr.dataset.mod=m.id; tr.dataset.reg=reg.id;
+    m.colunas.forEach(c=>{ const td=document.createElement("td"); const html=cellHTML(c,reg.valores[c.id]); if(html==="") {td.className="emptyc";td.textContent="—";} else td.innerHTML=html; tr.appendChild(td); });
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb); wrap.appendChild(t);
+  return wrap;
+}
+
+/* ---------- formatação de célula ---------- */
+function cellHTML(col,val){
+  if(val==null||val==="") return col.tipo==="simnao" ? '<span class="selo sv-cinza">Não</span>' : "";
+  switch(col.tipo){
+    case "moeda": return "R$ "+Number(val).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+    case "porcentagem": return (Math.round(Number(val)*100)/100)+"%";
+    case "numero": return esc(String(val));
+    case "data": return val ? new Date(val+"T00:00:00").toLocaleDateString("pt-BR") : "";
+    case "simnao": return '<span class="selo '+(val?"sv-verde":"sv-cinza")+'">'+(val?"Sim":"Não")+'</span>';
+    case "selo": { const o=(col.opcoes||[]).find(o=>o.valor===val); return '<span class="selo sv-'+(o?o.cor:"cinza")+'">'+esc(val)+'</span>'; }
+    case "link": return '<a class="link-c" href="'+esc(val)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">abrir ↗</a>';
+    case "pessoa": { const idx=personIndex(); return '<span class="plink" data-person="'+esc(val)+'">'+esc(idx[val]||val)+' ↦</span>'; }
+    default: return esc(String(val));
+  }
+}
+
+function renderGhost(){
+  const g=document.createElement("div"); g.className="ghost"; g.dataset.act="ghost";
+  g.style.left="80px"; g.style.top=(moduleBottom()+50)+"px";
+  g.innerHTML='<div class="p">＋</div><small>Novo módulo</small><small style="font-weight:400;opacity:.8">organograma · tabela</small>';
+  return g;
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function moduleEl(id){ return document.querySelector('.mod[data-mod="'+id+'"]'); }
+function moduleHeight(m){ const el=moduleEl(m.id); return el?el.offsetHeight:320; }
+function moduleBottom(){ return Math.max(0,...ws.modulos.map(m=>m.pos.y+moduleHeight(m))); }
+function autolayout(){ let y=60; ws.modulos.forEach(m=>{ m.pos.x=80; m.pos.y=y; y += moduleHeight(m)+60; }); save(); }
+
+/* ---------- lookups de vínculo ---------- */
+function orgOf(nodeId){ let id=null; ws.modulos.filter(m=>m.tipo==="organograma").forEach(m=>{ if(nodeId&&findOrgNode(m,nodeId))id=m.id; }); return id; }
+function nodeReferences(nodeId){ const out=[]; ws.modulos.filter(m=>m.tipo==="tabela").forEach(m=>{ const pcols=m.colunas.filter(c=>c.tipo==="pessoa"); if(!pcols.length)return; m.registros.forEach(r=>{ pcols.forEach(pc=>{ if(r.valores[pc.id]===nodeId) out.push({modId:m.id,regId:r.id,mod:m.nome,titulo:r.valores[m.colunas[0].id]||"(registro)"}); }); }); }); return out; }
+
+/* ---------- reatividade: focar caixa no mapa ---------- */
+function focusNode(nodeId){
+  const modId=orgOf(nodeId); if(!modId) return;
+  view="mapa"; render();
+  requestAnimationFrame(()=>{
+    const el=document.querySelector('.node[data-node="'+nodeId+'"]'); if(!el)return;
+    const st=stage.getBoundingClientRect(), r=el.getBoundingClientRect();
+    tx += st.width/2 - (r.left-st.left+r.width/2);
+    ty += st.height/2 - (r.top-st.top+r.height/2);
+    applyZoom();
+    el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1700);
+  });
+  closeModal();
+}
+
+/* ---------- sheet: lista ---------- */
+function renderSheet(){
+  const sheet=document.getElementById("sheet"); sheet.innerHTML="";
+  if(view==="lista"){ ws.modulos.forEach(m=>sheet.appendChild(renderListBlock(m))); }
+  else { sheet.appendChild(renderUnidade()); }
+}
+function renderListBlock(m){
+  const card=document.createElement("div"); card.className="lcard";
+  card.innerHTML='<div class="lhead"><div class="ic">'+(m.tipo==="organograma"?"▤":"☰")+'</div><b>'+esc(m.nome)+'</b><span class="tag">'+(m.tipo==="organograma"?"organograma":"tabela")+'</span></div>';
+  const body=document.createElement("div"); body.className="lbody";
+  if(m.tipo==="organograma"){ body.appendChild(outline(m.raiz,m.id)); }
+  else { body.appendChild(renderTableRO(m)); }
+  card.appendChild(body); return card;
+}
+function outline(node,modId){
+  const ul=document.createElement("ul"); ul.className="outline";
+  const li=document.createElement("li");
+  li.innerHTML='<div class="oi" data-mod="'+modId+'" data-node="'+node.id+'"><span class="of">'+esc(node.funcao||"(sem função)")+'</span>'+(node.integrantes?'<span class="on">'+esc(node.integrantes)+'</span>':"")+'</div>';
+  ul.appendChild(li);
+  if(node.filhos&&node.filhos.length){ const sub=document.createElement("div"); sub.className="osub"; node.filhos.forEach(c=>sub.appendChild(outline(c,modId))); li.appendChild(sub); }
+  return ul;
+}
+function renderTableRO(m){
+  const t=document.createElement("table"); t.className="tbl";
+  const thead=document.createElement("thead"), trh=document.createElement("tr");
+  m.colunas.forEach(c=>{ const th=document.createElement("th"); th.textContent=c.nome; trh.appendChild(th); });
+  thead.appendChild(trh); t.appendChild(thead);
+  const tb=document.createElement("tbody");
+  if(!m.registros.length){ const tr=document.createElement("tr"),td=document.createElement("td"); td.colSpan=m.colunas.length; td.className="tempty"; td.textContent="Sem registros."; tr.appendChild(td); tb.appendChild(tr); }
+  m.registros.forEach(reg=>{ const tr=document.createElement("tr"); tr.dataset.mod=m.id; tr.dataset.reg=reg.id; m.colunas.forEach(c=>{ const td=document.createElement("td"); const h=cellHTML(c,reg.valores[c.id]); if(h===""){td.className="emptyc";td.textContent="—";} else td.innerHTML=h; tr.appendChild(td); }); tb.appendChild(tr); });
+  t.appendChild(tb); return t;
+}
+/* ---------- sheet: por unidade ---------- */
+function renderUnidade(){
+  const wrap=document.createElement("div"); wrap.className="units";
+  const groups={}; const push=(u,it)=>{ (groups[u]=groups[u]||[]).push(it); };
+  ws.modulos.filter(m=>m.tipo==="organograma").forEach(m=>walk(m.raiz,n=>{ if(n.unidade&&n.integrantes) push(n.unidade,{label:n.integrantes,sub:n.funcao,node:n.id}); }));
+  ws.modulos.filter(m=>m.tipo==="tabela").forEach(m=>{ const uc=m.colunas.find(c=>/unidade/i.test(c.nome)); if(!uc)return; const nc=m.colunas[0]; const pc=m.colunas.find(c=>c.tipo==="pessoa"); m.registros.forEach(r=>{ const u=r.valores[uc.id]; if(!u)return; push(u,{label:r.valores[nc.id]||"(sem nome)",sub:m.nome,node:pc?r.valores[pc.id]||null:null}); }); });
+  const units=Object.keys(groups);
+  if(!units.length){ wrap.innerHTML='<div class="uempty">Defina a <b>unidade</b> nas caixas do organograma, ou tenha uma coluna chamada "Unidade" numa tabela, para agrupar as pessoas aqui por unidade.</div>'; return wrap; }
+  units.forEach(u=>{ const col=document.createElement("div"); col.className="ucol"; col.innerHTML='<div class="uhead">'+esc(u)+'<span>'+groups[u].length+'</span></div>'; const list=document.createElement("div"); list.className="ulist"; groups[u].forEach(it=>{ const c=document.createElement("div"); c.className="ucard"+(it.node?" jump":""); if(it.node)c.dataset.node=it.node; c.innerHTML='<b>'+esc(it.label)+'</b><span>'+esc(it.sub)+'</span>'; list.appendChild(c); }); col.appendChild(list); wrap.appendChild(col); });
+  return wrap;
+}
+
+/* ============================================================
+   ZOOM / PAN
+   ============================================================ */
+function applyZoom(){ document.getElementById("world").style.transform="translate("+tx+"px,"+ty+"px) scale("+zoom+")"; document.getElementById("zlbl").textContent=Math.round(zoom*100)+"%"; }
+function zoomAt(dir,cx,cy){ const st=document.getElementById("stage").getBoundingClientRect(); cx=(cx==null?st.width/2:cx-st.left); cy=(cy==null?st.height/2:cy-st.top); const ns=Math.min(1.8,Math.max(.35,+(zoom*(dir>0?1.15:.87)).toFixed(3))); const wx=(cx-tx)/zoom, wy=(cy-ty)/zoom; tx=cx-wx*ns; ty=cy-wy*ns; zoom=ns; applyZoom(); hideTip(); }
+function zoomBtn(d){ zoomAt(d); }
+
+const stage=document.getElementById("stage");
+stage.addEventListener("wheel",e=>{ if(view!=="mapa")return; e.preventDefault(); zoomAt(e.deltaY<0?1:-1,e.clientX,e.clientY); },{passive:false});
+
+let pan=null, modrag=null, moved=false, suppress=false;
+stage.addEventListener("mousedown",e=>{
+  if(view!=="mapa") return;
+  const handle=e.target.closest('[data-handle]');
+  if(handle&&!e.target.closest(".mm")){ const modEl=handle.closest(".mod"); const m=getModule(modEl.dataset.mod);
+    modrag={m,sx:e.clientX,sy:e.clientY,ox:m.pos.x,oy:m.pos.y,el:modEl}; moved=false; stage.classList.add("grabbing"); return; }
+  if(e.target.closest(".node")||e.target.closest(".mod")||e.target.closest(".ghost")) return;
+  pan={sx:e.clientX,sy:e.clientY,ox:tx,oy:ty}; moved=false; stage.classList.add("grabbing"); hideTip();
+});
+window.addEventListener("mousemove",e=>{
+  if(modrag){ const dx=(e.clientX-modrag.sx)/zoom, dy=(e.clientY-modrag.sy)/zoom; if(Math.abs(dx)+Math.abs(dy)>2)moved=true; modrag.m.pos.x=Math.round(modrag.ox+dx); modrag.m.pos.y=Math.round(modrag.oy+dy); modrag.el.style.left=modrag.m.pos.x+"px"; modrag.el.style.top=modrag.m.pos.y+"px"; }
+  else if(pan){ const dx=e.clientX-pan.sx, dy=e.clientY-pan.sy; if(Math.abs(dx)+Math.abs(dy)>2)moved=true; tx=pan.ox+dx; ty=pan.oy+dy; applyZoom(); }
+});
+window.addEventListener("mouseup",()=>{ if(modrag&&moved){ save(); } if(moved)suppress=true; setTimeout(()=>suppress=false,0); pan=null; modrag=null; stage.classList.remove("grabbing"); });
+
+/* ============================================================
+   INTERAÇÕES (delegação de clique)
+   ============================================================ */
+document.getElementById("world").addEventListener("click",e=>{
+  if(suppress) return;
+  const ghost=e.target.closest(".ghost"); if(ghost){ novoModulo(); return; }
+  const person=e.target.closest("[data-person]"); if(person){ focusNode(person.dataset.person); return; }
+  const act=e.target.closest("[data-act]");
+  if(mode==="editar"&&act){ handleAct(act.dataset.act,act); return; }
+  const th=e.target.closest("th[data-col]"); if(mode==="editar"&&th){ const modEl=th.closest("[data-mod]"); openColumnPanel(modEl.dataset.mod,th.dataset.col); return; }
+  const node=e.target.closest(".node"); if(node){ onSelectNode(node.dataset.mod,node.dataset.node); return; }
+  const tr=e.target.closest("tr[data-reg]"); if(tr){ onSelectRecord(tr.dataset.mod,tr.dataset.reg); return; }
+});
+
+document.getElementById("sheet").addEventListener("click",e=>{
+  const person=e.target.closest("[data-person]"); if(person){ focusNode(person.dataset.person); return; }
+  const uc=e.target.closest(".ucard.jump"); if(uc){ focusNode(uc.dataset.node); return; }
+  const oi=e.target.closest(".oi"); if(oi){ openNodeModal(oi.dataset.mod,oi.dataset.node); return; }
+  const tr=e.target.closest("tr[data-reg]"); if(tr){ openRecordModal(tr.dataset.mod,tr.dataset.reg); return; }
+});
+
+function handleAct(act,el){
+  const modEl=el.closest(".mod"); const modId=modEl?modEl.dataset.mod:null;
+  if(act==="addreg") addRecord(modId);
+  else if(act==="addcol") openColumnPanel(modId,null);
+  else if(act==="ren") renameModule(modId);
+  else if(act==="delmod") deleteModule(modId);
+}
+
+/* ---------- hover tooltip (org) ---------- */
+const tip=document.getElementById("tip");
+document.getElementById("world").addEventListener("mouseover",e=>{ const n=e.target.closest(".node"); if(!n)return; const r=findOrgNode(getModule(n.dataset.mod),n.dataset.node); if(!r)return; const d=r.node; tip.innerHTML='<b>'+esc(d.funcao)+'</b><span>'+esc(d.integrantes||"sem integrante definido")+(d.unidade?" · "+esc(d.unidade):"")+'</span>'; tip.style.opacity=1; });
+document.getElementById("world").addEventListener("mousemove",e=>{ if(tip.style.opacity!=="1")return; const st=stage.getBoundingClientRect(); let x=e.clientX-st.left+14,y=e.clientY-st.top+14; tip.style.left=Math.min(x,st.width-240)+"px"; tip.style.top=Math.min(y,st.height-70)+"px"; });
+document.getElementById("world").addEventListener("mouseout",e=>{ if(e.target.closest(".node"))hideTip(); });
+function hideTip(){ tip.style.opacity=0; }
+
+/* ---------- seleção ---------- */
+function onSelectNode(modId,nodeId){ if(mode==="ver"){ openNodeModal(modId,nodeId); } else { sel={tipo:"node",modId,nodeId}; render(); openNodePanel(modId,nodeId); } }
+function onSelectRecord(modId,regId){ if(mode==="ver"){ openRecordModal(modId,regId); } else { sel={tipo:"record",modId,regId}; openRecordPanel(modId,regId); } }
+
+/* ============================================================
+   MODAIS (visualizar)
+   ============================================================ */
+const overlay=document.getElementById("overlay"), modalEl=document.getElementById("modal");
+function closeModal(){ overlay.classList.remove("open"); }
+function drow(k,v){ return '<div class="drow"><span class="k">'+esc(k)+'</span><span class="v">'+(v||"—")+'</span></div>'; }
+function openNodeModal(modId,nodeId){
+  const d=findOrgNode(getModule(modId),nodeId).node;
+  const refs=nodeReferences(nodeId);
+  const refHtml = refs.length ? '<div class="drow"><span class="k">Aparece em</span><span class="v">'+refs.map(x=>'<span class="reflink" onclick="openRecordModal(\''+x.modId+'\',\''+x.regId+'\')">'+esc(x.mod)+' → '+esc(x.titulo)+'</span>').join("<br>")+'</span></div>' : "";
+  modalEl.innerHTML='<div class="mh"><div><b>'+esc(d.funcao)+'</b><small>'+esc(d.unidade||"Grupo Equilibrium")+'</small></div><button class="x" onclick="closeModal()">×</button></div>'+
+    '<div class="mbd">'+drow("Integrante(s)",esc(d.integrantes))+(d.registro?drow("Registro",esc(d.registro)):"")+drow("Unidade",esc(d.unidade))+(d.descricao?drow("Descrição",esc(d.descricao)):"")+refHtml+'</div>';
+  overlay.classList.add("open");
+}
+function openRecordModal(modId,regId){
+  const m=getModule(modId); const reg=m.registros.find(r=>r.id===regId);
+  let rows=""; m.colunas.forEach(c=>{ const h=cellHTML(c,reg.valores[c.id]); rows+=drow(c.nome,h||"—"); });
+  const titulo = reg.valores[m.colunas[0].id] || m.nome;
+  modalEl.innerHTML='<div class="mh"><div><b>'+esc(titulo)+'</b><small>'+esc(m.nome)+'</small></div><button class="x" onclick="closeModal()">×</button></div><div class="mbd">'+rows+'</div>';
+  overlay.classList.add("open");
+}
+
+/* ============================================================
+   PAINEL (editar)
+   ============================================================ */
+const panel=document.getElementById("panel"), panelBody=document.getElementById("panelBody"), panelTitle=document.getElementById("panelTitle");
+function closePanel(){ panel.classList.remove("open"); sel=null; render(); }
+function openPanel(title){ panelTitle.textContent=title; panel.classList.add("open"); }
+
+/* ---- nó do organograma ---- */
+function openNodePanel(modId,nodeId){
+  const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId);
+  const isRoot=!parent; const sibs=parent?parent.filhos:[mod.raiz]; const idx=sibs.indexOf(node);
+  openPanel("Editar caixa");
+  panelBody.innerHTML=
+    fld("Função / setor","node_funcao",node.funcao,"text","Ex.: Gerência Clínica")+
+    fld("Integrante(s)","node_integrantes",node.integrantes,"text","Nome — em branco se indefinido")+
+    fld("Unidade","node_unidade",node.unidade,"text","EQ1, EQ2, Institucional…")+
+    fld("Registro (CRP/CRM)","node_registro",node.registro,"text","")+
+    fldArea("Descrição","node_descricao",node.descricao,"O que este setor faz…")+
+    '<div class="grp"><div class="lbl">Estrutura</div><div class="pbtns">'+
+      '<button class="pbtn wide" onclick="nodeAdd(\'child\')">＋ Subordinado</button>'+
+      '<button class="pbtn" onclick="nodeAdd(\'sib\')" '+(isRoot?"disabled":"")+'>＋ Par</button>'+
+      '<button class="pbtn" onclick="nodeDup()" '+(isRoot?"disabled":"")+'>⧉ Duplicar</button>'+
+      '<button class="pbtn" onclick="nodeMove(-1)" '+(isRoot||idx<=0?"disabled":"")+'>← Mover</button>'+
+      '<button class="pbtn" onclick="nodeMove(1)" '+(isRoot||idx>=sibs.length-1?"disabled":"")+'>Mover →</button>'+
+      '<button class="pbtn del wide" onclick="nodeDel()" '+(isRoot?"disabled":"")+'>🗑 Excluir caixa</button>'+
+    '</div></div>';
+  bindNodeFields(modId,nodeId);
+}
+function bindNodeFields(modId,nodeId){
+  const map={node_funcao:"funcao",node_integrantes:"integrantes",node_unidade:"unidade",node_registro:"registro",node_descricao:"descricao"};
+  Object.keys(map).forEach(fid=>{ const el=document.getElementById(fid); if(!el)return; el.oninput=()=>{ const node=findOrgNode(getModule(modId),nodeId).node; node[map[fid]]=el.value; save(); const card=document.querySelector('.node[data-node="'+nodeId+'"]'); if(card){ if(map[fid]==="funcao")card.querySelector(".r").textContent=el.value||"(sem função)"; if(map[fid]==="integrantes"){const nn=card.querySelector(".n");nn.textContent=el.value||"— definir —";nn.className="n"+(el.value?"":" empty");} } }; });
+}
+function nodeAdd(kind){ const {modId,nodeId}=sel; const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId); const c={id:uid(),funcao:"Nova função",integrantes:"",unidade:"",registro:"",descricao:"",filhos:[]}; if(kind==="child"){ node.filhos.push(c); } else { if(!parent)return; parent.filhos.splice(parent.filhos.indexOf(node)+1,0,c); } save(); sel={tipo:"node",modId,nodeId:c.id}; render(); openNodePanel(modId,c.id); toast(kind==="child"?"Subordinado adicionado":"Par adicionado"); }
+function nodeDup(){ const {modId,nodeId}=sel; const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId); if(!parent)return; const cl=JSON.parse(JSON.stringify(node)); (function r(x){x.id=uid();(x.filhos||[]).forEach(r);})(cl); parent.filhos.splice(parent.filhos.indexOf(node)+1,0,cl); save(); sel={tipo:"node",modId,nodeId:cl.id}; render(); openNodePanel(modId,cl.id); toast("Caixa duplicada"); }
+function nodeMove(dir){ const {modId,nodeId}=sel; const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId); if(!parent)return; const i=parent.filhos.indexOf(node),j=i+dir; if(j<0||j>=parent.filhos.length)return; parent.filhos.splice(i,1); parent.filhos.splice(j,0,node); save(); render(); openNodePanel(modId,nodeId); }
+function nodeDel(){ const {modId,nodeId}=sel; const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId); if(!parent)return; if(!confirm('Excluir "'+node.funcao+'"'+(node.filhos.length?" e todos os subordinados?":"?")))return; parent.filhos.splice(parent.filhos.indexOf(node),1); save(); closePanel(); toast("Caixa excluída"); }
+
+/* ---- registro de tabela ---- */
+function openRecordPanel(modId,regId){
+  const m=getModule(modId); const reg=m.registros.find(r=>r.id===regId);
+  openPanel("Editar registro");
+  let html="";
+  m.colunas.forEach(c=>{ html+=recordField(c,reg.valores[c.id]); });
+  html+='<div class="grp"><div class="pbtns"><button class="pbtn del wide" onclick="recordDel()">🗑 Excluir registro</button></div></div>';
+  panelBody.innerHTML=html;
+  m.colunas.forEach(c=>{ const el=document.getElementById("rf_"+c.id); if(!el)return; const ev=(c.tipo==="simnao")?"onchange":"oninput"; el[ev==="onchange"?"onchange":"oninput"]=()=>{ let v = c.tipo==="simnao"?el.checked : el.value; reg.valores[c.id]=v; save(); updateCell(modId,regId,c.id); }; });
+}
+function recordField(c,val){
+  const id="rf_"+c.id;
+  if(c.tipo==="textolongo") return '<div class="field"><label>'+esc(c.nome)+'</label><textarea id="'+id+'">'+esc(val||"")+'</textarea></div>';
+  if(c.tipo==="selecao"||c.tipo==="selo"){ const opts=(c.tipo==="selo"?(c.opcoes||[]).map(o=>o.valor):(c.opcoes||[])); return '<div class="field"><label>'+esc(c.nome)+'</label><select id="'+id+'"><option value="">—</option>'+opts.map(o=>'<option '+(o===val?"selected":"")+'>'+esc(o)+'</option>').join("")+'</select></div>'; }
+  if(c.tipo==="pessoa"){ const opts=personOptions(); return '<div class="field"><label>'+esc(c.nome)+'</label><select id="'+id+'"><option value="">—</option>'+opts.map(o=>'<option value="'+o.id+'" '+(o.id===val?"selected":"")+'>'+esc(o.label)+'</option>').join("")+'</select></div>'; }
+  if(c.tipo==="simnao") return '<div class="field"><label>'+esc(c.nome)+'</label><div class="chk"><input type="checkbox" id="'+id+'" '+(val?"checked":"")+'><span>Sim</span></div></div>';
+  const type = c.tipo==="numero"||c.tipo==="moeda"||c.tipo==="porcentagem" ? "number" : c.tipo==="data" ? "date" : c.tipo==="telefone" ? "tel" : c.tipo==="link" ? "url" : "text";
+  return '<div class="field"><label>'+esc(c.nome)+'</label><input type="'+type+'" id="'+id+'" value="'+esc(val||"")+'"></div>';
+}
+function updateCell(modId,regId,colId){ const m=getModule(modId); const reg=m.registros.find(r=>r.id===regId); const col=m.colunas.find(c=>c.id===colId); const tr=document.querySelector('tr[data-reg="'+regId+'"]'); if(!tr)return; const ci=m.colunas.indexOf(col); const td=tr.children[ci]; if(!td)return; const html=cellHTML(col,reg.valores[colId]); if(html===""){td.className="emptyc";td.textContent="—";} else {td.className="";td.innerHTML=html;} }
+function addRecord(modId){ const m=getModule(modId); const reg={id:uid(),valores:{}}; m.registros.push(reg); save(); sel={tipo:"record",modId,regId:reg.id}; render(); openRecordPanel(modId,reg.id); toast("Registro adicionado"); }
+function recordDel(){ const {modId,regId}=sel; const m=getModule(modId); if(!confirm("Excluir este registro?"))return; m.registros=m.registros.filter(r=>r.id!==regId); save(); closePanel(); toast("Registro excluído"); }
+
+/* ---- coluna ---- */
+function openColumnPanel(modId,colId){
+  const m=getModule(modId); const col = colId ? m.colunas.find(c=>c.id===colId) : {id:uid(),nome:"",tipo:"texto",opcoes:[]};
+  const isNew=!colId;
+  openPanel(isNew?"Nova coluna":"Editar coluna");
+  const optText = (col.tipo==="selo") ? (col.opcoes||[]).map(o=>o.valor).join(", ") : (col.opcoes||[]).join(", ");
+  panelBody.innerHTML=
+    fld("Nome da coluna","col_nome",col.nome,"text","Ex.: Convênio")+
+    '<div class="field"><label>Tipo</label><select id="col_tipo">'+FIELD_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===col.tipo?"selected":"")+'>'+t.nome+'</option>').join("")+'</select></div>'+
+    '<div class="field" id="col_opcoes_wrap" style="'+((col.tipo==="selecao"||col.tipo==="selo")?"":"display:none")+'"><label>Opções (separadas por vírgula)</label><input type="text" id="col_opcoes" value="'+esc(optText)+'" placeholder="Ativo, Inativo, Pendente"></div>'+
+    '<div class="grp"><div class="pbtns">'+
+      '<button class="pbtn save wide" onclick="saveColumn(\''+modId+'\',\''+col.id+'\','+isNew+')">Salvar coluna</button>'+
+      (isNew?"":'<button class="pbtn del wide" onclick="deleteColumn(\''+modId+'\',\''+col.id+'\')">🗑 Excluir coluna</button>')+
+    '</div></div>';
+  document.getElementById("col_tipo").onchange=e=>{ document.getElementById("col_opcoes_wrap").style.display=(e.target.value==="selecao"||e.target.value==="selo")?"":"none"; };
+}
+function saveColumn(modId,colId,isNew){
+  const m=getModule(modId); const nome=document.getElementById("col_nome").value.trim(); const tipo=document.getElementById("col_tipo").value;
+  if(!nome){ toast("Dê um nome à coluna."); return; }
+  let opcoes=[]; if(tipo==="selecao"||tipo==="selo"){ const raw=(document.getElementById("col_opcoes").value||"").split(",").map(s=>s.trim()).filter(Boolean); opcoes = tipo==="selo" ? raw.map((v,i)=>({valor:v,cor:SELO_CORES[i%SELO_CORES.length]})) : raw; }
+  if(isNew){ m.colunas.push({id:colId,nome,tipo,opcoes}); }
+  else { const col=m.colunas.find(c=>c.id===colId); col.nome=nome; col.tipo=tipo; col.opcoes=opcoes; }
+  save(); closePanel(); toast(isNew?"Coluna criada":"Coluna atualizada");
+}
+function deleteColumn(modId,colId){ const m=getModule(modId); if(m.colunas.length<=1){ toast("A tabela precisa de ao menos uma coluna."); return; } if(!confirm("Excluir esta coluna e seus valores?"))return; m.colunas=m.colunas.filter(c=>c.id!==colId); m.registros.forEach(r=>delete r.valores[colId]); save(); closePanel(); toast("Coluna excluída"); }
+
+/* ---- helpers de campo ---- */
+function fld(label,id,val,type,ph){ return '<div class="field"><label>'+esc(label)+'</label><input type="'+(type||"text")+'" id="'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'"></div>'; }
+function fldArea(label,id,val,ph){ return '<div class="field"><label>'+esc(label)+'</label><textarea id="'+id+'" placeholder="'+esc(ph||"")+'">'+esc(val||"")+'</textarea></div>'; }
+
+/* ============================================================
+   MÓDULOS (criar / renomear / excluir)
+   ============================================================ */
+function novoModulo(){
+  if(mode!=="editar") setMode("editar");
+  const tipo = confirm("Criar um ORGANOGRAMA?\n\nOK = organograma · Cancelar = tabela") ? "organograma" : "tabela";
+  const pos={x:80,y:moduleBottom()+50};
+  let m;
+  if(tipo==="organograma"){ m={id:uid(),tipo,nome:"Novo organograma",pos,raiz:{id:uid(),funcao:"Topo",integrantes:"",unidade:"",registro:"",descricao:"",filhos:[]}}; }
+  else { m={id:uid(),tipo,nome:"Nova tabela",pos,colunas:[{id:uid(),nome:"Nome",tipo:"texto",opcoes:[]},{id:uid(),nome:"Status",tipo:"selo",opcoes:[{valor:"Ativo",cor:"verde"},{valor:"Inativo",cor:"vermelho"}]}],registros:[]}; }
+  ws.modulos.push(m); save(); render(); toast(tipo==="organograma"?"Organograma criado":"Tabela criada");
+}
+function renameModule(modId){ const m=getModule(modId); const v=prompt("Nome do módulo:",m.nome); if(v==null)return; m.nome=v.trim()||m.nome; save(); render(); }
+function deleteModule(modId){ const m=getModule(modId); if(ws.modulos.length<=1){ toast("Mantenha ao menos um módulo."); return; } if(!confirm('Excluir o módulo "'+m.nome+'"?'))return; ws.modulos=ws.modulos.filter(x=>x.id!==modId); save(); closePanel(); render(); toast("Módulo excluído"); }
+
+/* ============================================================
+   MODO / TÍTULO / IMPORT-EXPORT / PDF
+   ============================================================ */
+function setMode(m){ if(m==="editar"&&editLocked()){ const p=prompt("Senha de edição:"); if(p!==CLOUD.senha){ if(p!==null)toast("Senha incorreta"); return; } unlocked=true; } mode=m; document.querySelectorAll(".seg-b").forEach(b=>b.classList.toggle("on",b.dataset.mode===m)); if(m==="ver"){ closePanel(); } closeModal(); render(); }
+function setView(v){ view=v; if(v!=="mapa"){ panel.classList.remove("open"); sel=null; } closeModal(); render(); }
+document.getElementById("docTitle").addEventListener("input",e=>{ ws.meta.titulo=e.target.value; save(); });
+
+function exportJSON(){ const b=new Blob([JSON.stringify(ws,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=(ws.meta.titulo||"painel").replace(/[^\w\-]+/g,"_")+".json"; a.click(); URL.revokeObjectURL(a.href); toast("Arquivo exportado"); }
+function importJSON(ev){ const f=ev.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.modulos)throw 0; ws=d; sel=null; save(); render(); closePanel(); toast("Painel importado"); }catch(e){ alert("Arquivo inválido. Use um JSON exportado por este painel."); } }; r.readAsText(f); ev.target.value=""; }
+function restaurar(){ if(!confirm("Restaurar o painel padrão? Isso substitui a versão atual (exporte antes se quiser guardar)."))return; ws=defaultWorkspace(); sel=null; render(); autolayout(); render(); closePanel(); toast("Padrão restaurado"); }
+function countPeople(){ let n=0; ws.modulos.filter(m=>m.tipo==="organograma").forEach(m=>walk(m.raiz,x=>{ if(x.integrantes)n++; })); return n; }
+function buildReport(){
+  const rep=document.getElementById("report"); rep.innerHTML="";
+  const data=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
+  const cover=document.createElement("div"); cover.className="rep-cover";
+  cover.innerHTML='<div class="rep-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M6.5 21h11"/><path d="M4 7.5h16"/><path d="M4 7.5l-2.2 4.4a2.6 2.6 0 0 0 5.2 0z"/><path d="M20 7.5l-2.2 4.4a2.6 2.6 0 0 0 5.2 0z"/></svg></div>'+
+    '<div class="rep-brand">Grupo Equilibrium</div>'+
+    '<div class="rep-sub">Uberlândia/MG — EQ1 Med Center · EQ2 Terapia Infantil</div>'+
+    '<div class="rep-title">'+esc(ws.meta.titulo)+'</div>'+
+    '<div class="rep-meta">Gerado em '+data+' · '+ws.modulos.length+' módulos · '+countPeople()+' integrantes mapeados</div>';
+  rep.appendChild(cover);
+  ws.modulos.forEach(m=>{
+    const sec=document.createElement("div"); sec.className="rep-section"+(m.tipo==="tabela"?" tbl-sec":"");
+    const h=document.createElement("div"); h.className="rep-h"; h.innerHTML=esc(m.nome)+'<span class="rt">'+(m.tipo==="organograma"?"organograma":"tabela")+'</span>';
+    sec.appendChild(h);
+    if(m.tipo==="organograma"){ const w=document.createElement("div"); w.className="rep-treewrap"; const ul=document.createElement("ul"); ul.className="tree"; ul.appendChild(renderNode(m,m.raiz,0)); w.appendChild(ul); sec.appendChild(w); }
+    else { sec.appendChild(renderTableRO(m)); }
+    rep.appendChild(sec);
+  });
+  const uni=renderUnidade();
+  if(uni.querySelector(".ucol")){ const sec=document.createElement("div"); sec.className="rep-section"; sec.innerHTML='<div class="rep-h">Distribuição por unidade</div>'; uni.className="units rep-units"; sec.appendChild(uni); rep.appendChild(sec); }
+}
+function scaleReportTrees(){ document.querySelectorAll(".rep-treewrap").forEach(w=>{ w.style.transform="none"; w.style.height=""; const ul=w.firstElementChild; const cw=ul.scrollWidth, ch=ul.scrollHeight; const s=Math.min(1, 940/cw, 690/ch); w.style.transform="scale("+s+")"; w.style.height=(ch*s)+"px"; }); }
+function gerarPDF(){ closePanel(); closeModal(); buildReport(); document.body.classList.add("printing"); scaleReportTrees(); window.print(); document.body.classList.remove("printing"); document.getElementById("report").innerHTML=""; }
+
+/* ---------- toast ---------- */
+let toastT; function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2000); }
+
+/* ---------- init ---------- */
+loadLocal(); render();
+if(needsAutolayout){ autolayout(); needsAutolayout=false; render(); }
+initCloud();
+</script>
+</body>
+</html>
