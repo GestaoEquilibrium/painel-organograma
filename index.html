@@ -174,6 +174,12 @@
   .swatch.on{border-color:#F2B807;box-shadow:0 0 0 2px rgba(242,184,7,.45)}
   .swatch.reset{background:#fff;border:1.5px dashed #b9cbe0;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:none}
   .swatch.reset.on{border-color:#F2B807}
+  .swatch.pick{-webkit-appearance:none;-moz-appearance:none;appearance:none;background:conic-gradient(from 0deg,#f43f5e,#f59e0b,#eab308,#10b981,#3b82f6,#8b5cf6,#f43f5e);box-shadow:0 0 0 1px #d3e0ef}
+  .swatch.pick.on{border-color:#F2B807;box-shadow:0 0 0 2px rgba(242,184,7,.45)}
+  .swatch.pick::-webkit-color-swatch-wrapper{padding:0}
+  .swatch.pick::-webkit-color-swatch{border:0;border-radius:5px;opacity:0}
+  .swatch.pick::-moz-color-swatch{border:0;opacity:0}
+  .swatch.pick::-moz-focus-inner{border:0;padding:0}
   .chk.mini{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer}
   .chk.mini input{width:auto}
   .grp .lbl{font-size:11.5px;font-weight:700;color:var(--muted);margin:6px 0 8px;text-transform:uppercase;letter-spacing:.4px}
@@ -355,6 +361,8 @@ const NODE_CORES = {
   roxo:{bg:"#6C5CE7",fg:"#fff",label:"Roxo"},
   cinza:{bg:"#5B6B7B",fg:"#fff",label:"Cinza"}
 };
+function readableText(hex){ let h=String(hex).replace("#",""); if(h.length===3)h=h.split("").map(c=>c+c).join(""); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); const L=(0.299*r+0.587*g+0.114*b)/255; return L>0.62?"#14375A":"#fff"; }
+function resolveColor(cor){ if(!cor)return null; if(NODE_CORES[cor])return NODE_CORES[cor]; if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cor))return {bg:cor,fg:readableText(cor)}; return null; }
 
 function uid(){ return "x"+Math.random().toString(36).slice(2,9); }
 
@@ -495,9 +503,9 @@ function renderNode(mod,node,depth){
   const li=document.createElement("li");
   const card=document.createElement("div");
   const isSel=sel&&sel.tipo==="node"&&sel.nodeId===node.id;
-  const custom=node.cor&&NODE_CORES[node.cor];
+  const custom=resolveColor(node.cor);
   card.className="node lv"+Math.min(depth,5)+(isSel?" sel":"")+(custom?" custom":"");
-  if(custom){ card.style.background=NODE_CORES[node.cor].bg; card.style.color=NODE_CORES[node.cor].fg; }
+  if(custom){ card.style.background=custom.bg; card.style.color=custom.fg; }
   card.dataset.mod=mod.id; card.dataset.node=node.id;
   card.innerHTML='<div class="r">'+esc(node.funcao||"(sem função)")+'</div><div class="n'+(node.integrantes?"":" empty")+'">'+esc(node.integrantes||"— definir —")+'</div>';
   li.appendChild(card);
@@ -739,19 +747,24 @@ function openNodePanel(modId,nodeId){
   bindNodeFields(modId,nodeId);
 }
 function colorSwatches(node){
+  const isHex=node.cor&&/^#/.test(node.cor);
   let s='<button class="swatch reset'+(node.cor?"":" on")+'" data-cor="padrao" title="Padrão (cor do nível)" onclick="setNodeColor(\'padrao\')">↺</button>';
   Object.keys(NODE_CORES).forEach(k=>{ const c=NODE_CORES[k]; s+='<button class="swatch'+(node.cor===k?" on":"")+'" data-cor="'+k+'" style="background:'+c.bg+'" title="'+c.label+'" onclick="setNodeColor(\''+k+'\')"></button>'; });
+  s+='<input type="color" id="corCustom" class="swatch pick'+(isHex?" on":"")+'" title="Escolher na paleta completa" value="'+(isHex?node.cor:"#2E75B6")+'" oninput="setNodeColor(this.value)">';
   return '<div class="grp"><div class="lbl">Cor da caixa</div><div class="swatches">'+s+'</div>'+
     '<label class="chk mini"><input type="checkbox" id="corRamo"><span>Aplicar aos subordinados</span></label></div>';
 }
-function setNodeColor(key){
+function refreshSwatchState(cor){
+  document.querySelectorAll(".swatch[data-cor]").forEach(sw=>sw.classList.toggle("on",sw.dataset.cor===(cor||"padrao")));
+  const well=document.getElementById("corCustom"); if(well){ const isHex=cor&&/^#/.test(cor); well.classList.toggle("on",!!isHex); if(isHex)well.value=cor; }
+}
+function setNodeColor(value){
   if(!sel||sel.tipo!=="node")return;
   const {node}=findOrgNode(getModule(sel.modId),sel.nodeId);
   const ramo=document.getElementById("corRamo")&&document.getElementById("corRamo").checked;
-  const apply=n=>{ if(key==="padrao")delete n.cor; else n.cor=key; };
+  const apply=n=>{ if(value==="padrao")delete n.cor; else n.cor=value; };
   apply(node); if(ramo)walk(node,n=>{ if(n!==node)apply(n); });
-  save(); render();
-  document.querySelectorAll(".swatch").forEach(sw=>sw.classList.toggle("on",sw.dataset.cor===(node.cor||"padrao")));
+  save(); render(); refreshSwatchState(node.cor);
 }
 function bindNodeFields(modId,nodeId){
   const map={node_funcao:"funcao",node_integrantes:"integrantes",node_unidade:"unidade",node_registro:"registro",node_descricao:"descricao"};
