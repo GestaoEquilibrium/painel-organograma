@@ -124,6 +124,7 @@
   .node .r{font-weight:700;font-size:12.5px;line-height:1.18}
   .node .n{font-size:11px;margin-top:3px;line-height:1.16;opacity:.95}
   .node .n.empty{font-style:italic;opacity:.55}
+  .node.custom .n{color:inherit;opacity:.85}
   .lv0{background:var(--deep);color:#fff}.lv1{background:var(--navy);color:#fff}.lv2{background:var(--teal);color:#fff}
   .lv3{background:var(--sky);color:#fff}.lv4{background:var(--ice);color:var(--deep)}.lv5{background:var(--frost);color:var(--deep)}
   .lv0 .n,.lv1 .n,.lv2 .n,.lv3 .n{color:#e6f0fb}
@@ -168,6 +169,13 @@
   .field input:focus,.field select:focus,.field textarea:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 3px rgba(46,117,182,.15)}
   .field .chk{display:flex;align-items:center;gap:9px}
   .field .chk input{width:auto}
+  .swatches{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+  .swatch{width:27px;height:27px;border-radius:7px;border:2px solid #fff;box-shadow:0 0 0 1px #d3e0ef;cursor:pointer;padding:0}
+  .swatch.on{border-color:#F2B807;box-shadow:0 0 0 2px rgba(242,184,7,.45)}
+  .swatch.reset{background:#fff;border:1.5px dashed #b9cbe0;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:none}
+  .swatch.reset.on{border-color:#F2B807}
+  .chk.mini{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer}
+  .chk.mini input{width:auto}
   .grp .lbl{font-size:11.5px;font-weight:700;color:var(--muted);margin:6px 0 8px;text-transform:uppercase;letter-spacing:.4px}
   .pbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .pbtn{padding:10px;background:var(--frost);color:var(--navy);font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px}
@@ -185,6 +193,12 @@
   .modal .mh b{font-size:16px}.modal .mh small{font-size:11.5px;color:#bcd4ee;display:block;margin-top:2px}
   .modal .mh .x{background:transparent;border:0;color:#fff;font-size:21px;cursor:pointer;line-height:1}
   .modal .mbd{padding:16px 20px;max-height:52vh;overflow:auto}
+  .modal.wide{width:420px}
+  .mfoot{display:flex;gap:8px;padding:13px 20px;background:#f7fafd;border-top:1px solid #eef2f8}
+  .mbtn{flex:1;font-size:13px;padding:11px;border-radius:9px;border:1px solid var(--navy);background:var(--navy);color:#fff;font-weight:600}
+  .mbtn:hover{background:var(--deep)}
+  .mbtn.del{flex:0 0 auto;padding:11px 16px;background:#fdecea;color:var(--danger);border-color:#f3c7c0}
+  .mbtn.del:hover{background:#f9d7d2}
   .drow{display:flex;padding:8px 0;border-bottom:1px solid #f0f4f9;font-size:13px}
   .drow:last-child{border:0}
   .drow .k{color:var(--muted);width:104px;flex-shrink:0}.drow .v{color:var(--ink)}
@@ -228,6 +242,7 @@
 
   @media print{
     @page{size:A4 landscape;margin:14mm}
+    html,body{overflow:visible !important;height:auto !important}
     .bar,.vbar,.stage,.panel,.overlay,.toast{display:none !important}
     #report{display:block !important;width:auto !important;margin:0 !important;padding:0 !important}
     .rep-cover{page-break-after:always}
@@ -282,11 +297,6 @@
     </div>
   </div>
 
-  <aside class="panel" id="panel">
-    <header><b id="panelTitle">Editar</b><button class="close" onclick="closePanel()">×</button></header>
-    <div class="pbody" id="panelBody"></div>
-  </aside>
-
   <div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
     <div class="modal" id="modal"></div>
   </div>
@@ -311,8 +321,8 @@ const LKEY = "painel_equilibrium_v2";
    'senha' liga o portão de edição (quem só lê não precisa dela).
    ============================================================ */
 const CLOUD = {
-  url:  "https://hzddjcsiprvhaunjukao.supabase.co",          // ex.: "https://xxxx.supabase.co"
-  key:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6ZGRqY3NpcHJ2aGF1bmp1a2FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MDY0NjIsImV4cCI6MjA5ODQ4MjQ2Mn0.3hvLxDTy-ABJ6ZDkWLxlp0Nu2p7BhfGK2w_F0qc2xrE",          // chave anon public
+  url:  "",          // ex.: "https://xxxx.supabase.co"
+  key:  "",          // chave anon public
   doc:  "default",   // id do documento (permite mais de um painel)
   senha:""           // senha de edição (deixe vazio para não exigir)
 };
@@ -333,6 +343,18 @@ const FIELD_TYPES = [
   {id:"link",        nome:"Anexo / link"},
 ];
 const SELO_CORES = ["verde","ambar","vermelho","azul","cinza"];
+const NODE_CORES = {
+  deep:{bg:"#14375A",fg:"#fff",label:"Azul profundo"},
+  navy:{bg:"#1F4E79",fg:"#fff",label:"Azul-marinho"},
+  teal:{bg:"#2E75B6",fg:"#fff",label:"Azul"},
+  sky:{bg:"#5B9BD5",fg:"#fff",label:"Azul-céu"},
+  ice:{bg:"#9DC3E6",fg:"#14375A",label:"Gelo"},
+  verde:{bg:"#1E8E5A",fg:"#fff",label:"Verde"},
+  ambar:{bg:"#B7791F",fg:"#fff",label:"Âmbar"},
+  vermelho:{bg:"#C0392B",fg:"#fff",label:"Vermelho"},
+  roxo:{bg:"#6C5CE7",fg:"#fff",label:"Roxo"},
+  cinza:{bg:"#5B6B7B",fg:"#fff",label:"Cinza"}
+};
 
 function uid(){ return "x"+Math.random().toString(36).slice(2,9); }
 
@@ -473,7 +495,9 @@ function renderNode(mod,node,depth){
   const li=document.createElement("li");
   const card=document.createElement("div");
   const isSel=sel&&sel.tipo==="node"&&sel.nodeId===node.id;
-  card.className="node lv"+Math.min(depth,5)+(isSel?" sel":"");
+  const custom=node.cor&&NODE_CORES[node.cor];
+  card.className="node lv"+Math.min(depth,5)+(isSel?" sel":"")+(custom?" custom":"");
+  if(custom){ card.style.background=NODE_CORES[node.cor].bg; card.style.color=NODE_CORES[node.cor].fg; }
   card.dataset.mod=mod.id; card.dataset.node=node.id;
   card.innerHTML='<div class="r">'+esc(node.funcao||"(sem função)")+'</div><div class="n'+(node.integrantes?"":" empty")+'">'+esc(node.integrantes||"— definir —")+'</div>';
   li.appendChild(card);
@@ -658,19 +682,21 @@ document.getElementById("world").addEventListener("mouseout",e=>{ if(e.target.cl
 function hideTip(){ tip.style.opacity=0; }
 
 /* ---------- seleção ---------- */
-function onSelectNode(modId,nodeId){ if(mode==="ver"){ openNodeModal(modId,nodeId); } else { sel={tipo:"node",modId,nodeId}; render(); openNodePanel(modId,nodeId); } }
-function onSelectRecord(modId,regId){ if(mode==="ver"){ openRecordModal(modId,regId); } else { sel={tipo:"record",modId,regId}; openRecordPanel(modId,regId); } }
+function onSelectNode(modId,nodeId){ if(mode==="ver") openNodeModal(modId,nodeId); else openNodePanel(modId,nodeId); }
+function onSelectRecord(modId,regId){ if(mode==="ver") openRecordModal(modId,regId); else openRecordPanel(modId,regId); }
 
 /* ============================================================
    MODAIS (visualizar)
    ============================================================ */
 const overlay=document.getElementById("overlay"), modalEl=document.getElementById("modal");
-function closeModal(){ overlay.classList.remove("open"); }
+function closeModal(){ overlay.classList.remove("open"); modalEl.classList.remove("wide"); if(sel){ sel=null; render(); } }
+function openEditModal(title,bodyHTML,footerHTML){ modalEl.classList.add("wide"); modalEl.innerHTML='<div class="mh"><div><b>'+esc(title)+'</b></div><button class="x" onclick="closeModal()">×</button></div><div class="mbd edit">'+bodyHTML+'</div><div class="mfoot">'+footerHTML+'</div>'; overlay.classList.add("open"); }
 function drow(k,v){ return '<div class="drow"><span class="k">'+esc(k)+'</span><span class="v">'+(v||"—")+'</span></div>'; }
 function openNodeModal(modId,nodeId){
   const d=findOrgNode(getModule(modId),nodeId).node;
   const refs=nodeReferences(nodeId);
   const refHtml = refs.length ? '<div class="drow"><span class="k">Aparece em</span><span class="v">'+refs.map(x=>'<span class="reflink" onclick="openRecordModal(\''+x.modId+'\',\''+x.regId+'\')">'+esc(x.mod)+' → '+esc(x.titulo)+'</span>').join("<br>")+'</span></div>' : "";
+  modalEl.classList.remove("wide");
   modalEl.innerHTML='<div class="mh"><div><b>'+esc(d.funcao)+'</b><small>'+esc(d.unidade||"Grupo Equilibrium")+'</small></div><button class="x" onclick="closeModal()">×</button></div>'+
     '<div class="mbd">'+drow("Integrante(s)",esc(d.integrantes))+(d.registro?drow("Registro",esc(d.registro)):"")+drow("Unidade",esc(d.unidade))+(d.descricao?drow("Descrição",esc(d.descricao)):"")+refHtml+'</div>';
   overlay.classList.add("open");
@@ -679,28 +705,28 @@ function openRecordModal(modId,regId){
   const m=getModule(modId); const reg=m.registros.find(r=>r.id===regId);
   let rows=""; m.colunas.forEach(c=>{ const h=cellHTML(c,reg.valores[c.id]); rows+=drow(c.nome,h||"—"); });
   const titulo = reg.valores[m.colunas[0].id] || m.nome;
+  modalEl.classList.remove("wide");
   modalEl.innerHTML='<div class="mh"><div><b>'+esc(titulo)+'</b><small>'+esc(m.nome)+'</small></div><button class="x" onclick="closeModal()">×</button></div><div class="mbd">'+rows+'</div>';
   overlay.classList.add("open");
 }
 
 /* ============================================================
-   PAINEL (editar)
+   POP-UP DE EDIÇÃO
    ============================================================ */
-const panel=document.getElementById("panel"), panelBody=document.getElementById("panelBody"), panelTitle=document.getElementById("panelTitle");
-function closePanel(){ panel.classList.remove("open"); sel=null; render(); }
-function openPanel(title){ panelTitle.textContent=title; panel.classList.add("open"); }
+function closePanel(){ closeModal(); }
 
 /* ---- nó do organograma ---- */
 function openNodePanel(modId,nodeId){
+  sel={tipo:"node",modId,nodeId};
   const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId);
   const isRoot=!parent; const sibs=parent?parent.filhos:[mod.raiz]; const idx=sibs.indexOf(node);
-  openPanel("Editar caixa");
-  panelBody.innerHTML=
+  const body=
     fld("Função / setor","node_funcao",node.funcao,"text","Ex.: Gerência Clínica")+
     fld("Integrante(s)","node_integrantes",node.integrantes,"text","Nome — em branco se indefinido")+
     fld("Unidade","node_unidade",node.unidade,"text","EQ1, EQ2, Institucional…")+
     fld("Registro (CRP/CRM)","node_registro",node.registro,"text","")+
     fldArea("Descrição","node_descricao",node.descricao,"O que este setor faz…")+
+    colorSwatches(node)+
     '<div class="grp"><div class="lbl">Estrutura</div><div class="pbtns">'+
       '<button class="pbtn wide" onclick="nodeAdd(\'child\')">＋ Subordinado</button>'+
       '<button class="pbtn" onclick="nodeAdd(\'sib\')" '+(isRoot?"disabled":"")+'>＋ Par</button>'+
@@ -709,7 +735,23 @@ function openNodePanel(modId,nodeId){
       '<button class="pbtn" onclick="nodeMove(1)" '+(isRoot||idx>=sibs.length-1?"disabled":"")+'>Mover →</button>'+
       '<button class="pbtn del wide" onclick="nodeDel()" '+(isRoot?"disabled":"")+'>🗑 Excluir caixa</button>'+
     '</div></div>';
+  openEditModal("Editar caixa",body,'<button class="mbtn" onclick="closeModal()">Concluir</button>');
   bindNodeFields(modId,nodeId);
+}
+function colorSwatches(node){
+  let s='<button class="swatch reset'+(node.cor?"":" on")+'" data-cor="padrao" title="Padrão (cor do nível)" onclick="setNodeColor(\'padrao\')">↺</button>';
+  Object.keys(NODE_CORES).forEach(k=>{ const c=NODE_CORES[k]; s+='<button class="swatch'+(node.cor===k?" on":"")+'" data-cor="'+k+'" style="background:'+c.bg+'" title="'+c.label+'" onclick="setNodeColor(\''+k+'\')"></button>'; });
+  return '<div class="grp"><div class="lbl">Cor da caixa</div><div class="swatches">'+s+'</div>'+
+    '<label class="chk mini"><input type="checkbox" id="corRamo"><span>Aplicar aos subordinados</span></label></div>';
+}
+function setNodeColor(key){
+  if(!sel||sel.tipo!=="node")return;
+  const {node}=findOrgNode(getModule(sel.modId),sel.nodeId);
+  const ramo=document.getElementById("corRamo")&&document.getElementById("corRamo").checked;
+  const apply=n=>{ if(key==="padrao")delete n.cor; else n.cor=key; };
+  apply(node); if(ramo)walk(node,n=>{ if(n!==node)apply(n); });
+  save(); render();
+  document.querySelectorAll(".swatch").forEach(sw=>sw.classList.toggle("on",sw.dataset.cor===(node.cor||"padrao")));
 }
 function bindNodeFields(modId,nodeId){
   const map={node_funcao:"funcao",node_integrantes:"integrantes",node_unidade:"unidade",node_registro:"registro",node_descricao:"descricao"};
@@ -722,13 +764,11 @@ function nodeDel(){ const {modId,nodeId}=sel; const mod=getModule(modId); const 
 
 /* ---- registro de tabela ---- */
 function openRecordPanel(modId,regId){
+  sel={tipo:"record",modId,regId};
   const m=getModule(modId); const reg=m.registros.find(r=>r.id===regId);
-  openPanel("Editar registro");
-  let html="";
-  m.colunas.forEach(c=>{ html+=recordField(c,reg.valores[c.id]); });
-  html+='<div class="grp"><div class="pbtns"><button class="pbtn del wide" onclick="recordDel()">🗑 Excluir registro</button></div></div>';
-  panelBody.innerHTML=html;
-  m.colunas.forEach(c=>{ const el=document.getElementById("rf_"+c.id); if(!el)return; const ev=(c.tipo==="simnao")?"onchange":"oninput"; el[ev==="onchange"?"onchange":"oninput"]=()=>{ let v = c.tipo==="simnao"?el.checked : el.value; reg.valores[c.id]=v; save(); updateCell(modId,regId,c.id); }; });
+  let body=""; m.colunas.forEach(c=>{ body+=recordField(c,reg.valores[c.id]); });
+  openEditModal("Editar registro",body,'<button class="mbtn del" onclick="recordDel()">🗑 Excluir</button><button class="mbtn" onclick="closeModal()">Concluir</button>');
+  m.colunas.forEach(c=>{ const el=document.getElementById("rf_"+c.id); if(!el)return; const handler=()=>{ let v = c.tipo==="simnao"?el.checked : el.value; reg.valores[c.id]=v; save(); updateCell(modId,regId,c.id); }; if(c.tipo==="simnao")el.onchange=handler; else el.oninput=handler; });
 }
 function recordField(c,val){
   const id="rf_"+c.id;
@@ -746,17 +786,14 @@ function recordDel(){ const {modId,regId}=sel; const m=getModule(modId); if(!con
 /* ---- coluna ---- */
 function openColumnPanel(modId,colId){
   const m=getModule(modId); const col = colId ? m.colunas.find(c=>c.id===colId) : {id:uid(),nome:"",tipo:"texto",opcoes:[]};
-  const isNew=!colId;
-  openPanel(isNew?"Nova coluna":"Editar coluna");
+  const isNew=!colId; sel=null;
   const optText = (col.tipo==="selo") ? (col.opcoes||[]).map(o=>o.valor).join(", ") : (col.opcoes||[]).join(", ");
-  panelBody.innerHTML=
+  const body=
     fld("Nome da coluna","col_nome",col.nome,"text","Ex.: Convênio")+
     '<div class="field"><label>Tipo</label><select id="col_tipo">'+FIELD_TYPES.map(t=>'<option value="'+t.id+'" '+(t.id===col.tipo?"selected":"")+'>'+t.nome+'</option>').join("")+'</select></div>'+
-    '<div class="field" id="col_opcoes_wrap" style="'+((col.tipo==="selecao"||col.tipo==="selo")?"":"display:none")+'"><label>Opções (separadas por vírgula)</label><input type="text" id="col_opcoes" value="'+esc(optText)+'" placeholder="Ativo, Inativo, Pendente"></div>'+
-    '<div class="grp"><div class="pbtns">'+
-      '<button class="pbtn save wide" onclick="saveColumn(\''+modId+'\',\''+col.id+'\','+isNew+')">Salvar coluna</button>'+
-      (isNew?"":'<button class="pbtn del wide" onclick="deleteColumn(\''+modId+'\',\''+col.id+'\')">🗑 Excluir coluna</button>')+
-    '</div></div>';
+    '<div class="field" id="col_opcoes_wrap" style="'+((col.tipo==="selecao"||col.tipo==="selo")?"":"display:none")+'"><label>Opções (separadas por vírgula)</label><input type="text" id="col_opcoes" value="'+esc(optText)+'" placeholder="Ativo, Inativo, Pendente"></div>';
+  const footer=(isNew?"":'<button class="mbtn del" onclick="deleteColumn(\''+modId+'\',\''+col.id+'\')">🗑 Excluir</button>')+'<button class="mbtn" onclick="saveColumn(\''+modId+'\',\''+col.id+'\','+isNew+')">Salvar coluna</button>';
+  openEditModal(isNew?"Nova coluna":"Editar coluna",body,footer);
   document.getElementById("col_tipo").onchange=e=>{ document.getElementById("col_opcoes_wrap").style.display=(e.target.value==="selecao"||e.target.value==="selo")?"":"none"; };
 }
 function saveColumn(modId,colId,isNew){
@@ -765,9 +802,9 @@ function saveColumn(modId,colId,isNew){
   let opcoes=[]; if(tipo==="selecao"||tipo==="selo"){ const raw=(document.getElementById("col_opcoes").value||"").split(",").map(s=>s.trim()).filter(Boolean); opcoes = tipo==="selo" ? raw.map((v,i)=>({valor:v,cor:SELO_CORES[i%SELO_CORES.length]})) : raw; }
   if(isNew){ m.colunas.push({id:colId,nome,tipo,opcoes}); }
   else { const col=m.colunas.find(c=>c.id===colId); col.nome=nome; col.tipo=tipo; col.opcoes=opcoes; }
-  save(); closePanel(); toast(isNew?"Coluna criada":"Coluna atualizada");
+  save(); render(); closeModal(); toast(isNew?"Coluna criada":"Coluna atualizada");
 }
-function deleteColumn(modId,colId){ const m=getModule(modId); if(m.colunas.length<=1){ toast("A tabela precisa de ao menos uma coluna."); return; } if(!confirm("Excluir esta coluna e seus valores?"))return; m.colunas=m.colunas.filter(c=>c.id!==colId); m.registros.forEach(r=>delete r.valores[colId]); save(); closePanel(); toast("Coluna excluída"); }
+function deleteColumn(modId,colId){ const m=getModule(modId); if(m.colunas.length<=1){ toast("A tabela precisa de ao menos uma coluna."); return; } if(!confirm("Excluir esta coluna e seus valores?"))return; m.colunas=m.colunas.filter(c=>c.id!==colId); m.registros.forEach(r=>delete r.valores[colId]); save(); render(); closeModal(); toast("Coluna excluída"); }
 
 /* ---- helpers de campo ---- */
 function fld(label,id,val,type,ph){ return '<div class="field"><label>'+esc(label)+'</label><input type="'+(type||"text")+'" id="'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'"></div>'; }
@@ -792,7 +829,7 @@ function deleteModule(modId){ const m=getModule(modId); if(ws.modulos.length<=1)
    MODO / TÍTULO / IMPORT-EXPORT / PDF
    ============================================================ */
 function setMode(m){ if(m==="editar"&&editLocked()){ const p=prompt("Senha de edição:"); if(p!==CLOUD.senha){ if(p!==null)toast("Senha incorreta"); return; } unlocked=true; } mode=m; document.querySelectorAll(".seg-b").forEach(b=>b.classList.toggle("on",b.dataset.mode===m)); if(m==="ver"){ closePanel(); } closeModal(); render(); }
-function setView(v){ view=v; if(v!=="mapa"){ panel.classList.remove("open"); sel=null; } closeModal(); render(); }
+function setView(v){ view=v; if(v!=="mapa") closeModal(); closeModal(); render(); }
 document.getElementById("docTitle").addEventListener("input",e=>{ ws.meta.titulo=e.target.value; save(); });
 
 function exportJSON(){ const b=new Blob([JSON.stringify(ws,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=(ws.meta.titulo||"painel").replace(/[^\w\-]+/g,"_")+".json"; a.click(); URL.revokeObjectURL(a.href); toast("Arquivo exportado"); }
