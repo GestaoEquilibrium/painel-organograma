@@ -447,6 +447,7 @@ function defaultWorkspace(){
 let ws, mode="ver", view="mapa", zoom=1, tx=30, ty=20;
 let sel = null;  // {tipo:'node'|'record'|'column'|'module', modId, ...}
 let needsAutolayout=false, unlocked=false, saveT;
+let pollT=null, lastStamp=null, dirtyPending=false;
 
 /* ---------- persistência local ---------- */
 function loadLocal(){ try{const s=localStorage.getItem(LKEY); if(s){ws=JSON.parse(s);return;}}catch(e){} ws=defaultWorkspace(); needsAutolayout=true; }
@@ -454,13 +455,32 @@ function loadLocal(){ try{const s=localStorage.getItem(LKEY); if(s){ws=JSON.pars
 /* ---------- nuvem (Supabase REST) ---------- */
 function chdr(extra){ return Object.assign({apikey:CLOUD.key,Authorization:"Bearer "+CLOUD.key,"Content-Type":"application/json"},extra||{}); }
 async function cloudLoad(){ const r=await fetch(CLOUD.url+"/rest/v1/painel?id=eq."+encodeURIComponent(CLOUD.doc)+"&select=title,data,updated_at",{headers:chdr()}); if(!r.ok)throw new Error("HTTP "+r.status); const rows=await r.json(); return rows[0]||null; }
-async function cloudSave(){ const body=[{id:CLOUD.doc,title:ws.meta.titulo,data:ws,updated_at:new Date().toISOString()}]; const r=await fetch(CLOUD.url+"/rest/v1/painel?on_conflict=id",{method:"POST",headers:chdr({Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(body)}); if(!r.ok)throw new Error(await r.text()); }
-function setStatus(kind){ const map={local:["local","Somente neste navegador"],sync:["saving","Conectando…"],saving:["saving","Salvando…"],ok:["ok","Salvo na nuvem"],offline:["offline","Sem conexão — salvo aqui"]}; const [cls,txt]=map[kind]||map.local; const p=document.getElementById("statusPill"); if(!p)return; p.className="pill "+cls; document.getElementById("statusText").textContent=txt; }
-async function syncNow(){ if(!cloudReady()){ toast("Configure a nuvem no topo do arquivo (CLOUD.url e CLOUD.key)."); return; } setStatus("sync"); try{ const row=await cloudLoad(); if(row&&row.data){ ws=row.data; sel=null; try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} render(); closePanel(); } else { await cloudSave(); } setStatus("ok"); toast("Sincronizado"); }catch(e){ setStatus("offline"); toast("Não foi possível sincronizar."); } }
-async function initCloud(){ if(!cloudReady()){ setStatus("local"); return; } setStatus("sync"); try{ const row=await cloudLoad(); if(row&&row.data){ ws=row.data; needsAutolayout=false; try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} render(); } else { await cloudSave(); } setStatus("ok"); }catch(e){ setStatus("offline"); } }
+async function cloudStamp(){ const r=await fetch(CLOUD.url+"/rest/v1/painel?id=eq."+encodeURIComponent(CLOUD.doc)+"&select=updated_at",{headers:chdr()}); if(!r.ok)throw new Error("HTTP "+r.status); const rows=await r.json(); return rows[0]?rows[0].updated_at:null; }
+async function cloudSave(){ const stamp=new Date().toISOString(); const body=[{id:CLOUD.doc,title:ws.meta.titulo,data:ws,updated_at:stamp}]; const r=await fetch(CLOUD.url+"/rest/v1/painel?on_conflict=id",{method:"POST",headers:chdr({Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(body)}); if(!r.ok)throw new Error(await r.text()); return stamp; }
+function setStatus(kind){ const map={local:["local","Somente neste navegador"],sync:["saving","Conectando…"],saving:["saving","Salvando…"],ok:["ok","Salvo na nuvem"],live:["ok","Ao vivo · atualizado"],offline:["offline","Sem conexão — salvo aqui"]}; const [cls,txt]=map[kind]||map.local; const p=document.getElementById("statusPill"); if(!p)return; p.className="pill "+cls; document.getElementById("statusText").textContent=txt; }
+
+/* ---------- tempo real (polling leve) ---------- */
+function canApplyRemote(){ return !document.getElementById("overlay").classList.contains("open") && !dirtyPending && !noderag && !modrag; }
+async function poll(){
+  if(!cloudReady()||document.hidden) return;
+  try{
+    const stamp=await cloudStamp();
+    if(stamp && stamp!==lastStamp){
+      if(canApplyRemote()){
+        const row=await cloudLoad();
+        if(row&&row.data){ ws=row.data; lastStamp=row.updated_at; sel=null; try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} render(); setStatus("live"); toast("Painel atualizado por outra pessoa"); }
+      }
+    } else if(document.getElementById("statusPill").classList.contains("offline")){ setStatus("ok"); }
+  }catch(e){ setStatus("offline"); }
+}
+function startPolling(){ if(pollT)clearInterval(pollT); if(cloudReady())pollT=setInterval(poll,4000); }
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&cloudReady())poll(); });
+
+async function syncNow(){ if(!cloudReady()){ toast("Configure a nuvem no topo do arquivo (CLOUD.url e CLOUD.key)."); return; } setStatus("sync"); try{ const row=await cloudLoad(); if(row&&row.data){ ws=row.data; lastStamp=row.updated_at; sel=null; try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} render(); closeModal(); } else { lastStamp=await cloudSave(); } setStatus("ok"); toast("Sincronizado"); }catch(e){ setStatus("offline"); toast("Não foi possível sincronizar."); } }
+async function initCloud(){ if(!cloudReady()){ setStatus("local"); return; } setStatus("sync"); try{ const row=await cloudLoad(); if(row&&row.data){ ws=row.data; lastStamp=row.updated_at; needsAutolayout=false; try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} render(); } else { lastStamp=await cloudSave(); } setStatus("ok"); }catch(e){ setStatus("offline"); } startPolling(); }
 
 /* ---------- salvar (local + nuvem com debounce) ---------- */
-function save(){ ws.meta.atualizado_em=new Date().toISOString(); try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} if(!cloudReady())return; setStatus("saving"); clearTimeout(saveT); saveT=setTimeout(async()=>{ try{await cloudSave(); setStatus("ok");}catch(e){setStatus("offline");} },700); }
+function save(){ ws.meta.atualizado_em=new Date().toISOString(); try{localStorage.setItem(LKEY,JSON.stringify(ws));}catch(e){} if(!cloudReady())return; dirtyPending=true; setStatus("saving"); clearTimeout(saveT); saveT=setTimeout(async()=>{ try{ lastStamp=await cloudSave(); setStatus("ok"); }catch(e){ setStatus("offline"); } dirtyPending=false; },700); }
 function editLocked(){ return cloudReady() && CLOUD.senha && !unlocked; }
 
 /* ---------- lookups ---------- */
