@@ -53,10 +53,21 @@
   .vseg-b:hover{color:var(--navy)}
   .vseg-b.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(20,55,90,.12)}
   .vbar .vhint{font-size:11.5px;color:var(--muted)}
+  .vbtn{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:9px;border:1px solid #d3e0ef;background:#fff;color:var(--navy);font-size:12.5px;font-weight:600}
+  .vbtn:hover{background:var(--frost)}
+  .vbtn svg{width:15px;height:15px}
+  .typepick{display:flex;gap:9px}
+  .tp{flex:1;display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:12px 13px;border-radius:11px;border:2px solid #dbe6f2;background:#fff;cursor:pointer;text-align:left}
+  .tp:hover{border-color:var(--ice)}
+  .tp.on{border-color:var(--teal);background:var(--frost)}
+  .tp b{font-size:13.5px;color:var(--navy)}
+  .tp span{font-size:11.5px;color:var(--muted)}
 
   /* ---------- canvas ---------- */
   .stage{position:relative;flex:1;overflow:hidden;background:radial-gradient(circle at 1px 1px,#d3e0f0 1px,transparent 0);background-size:28px 28px;cursor:grab}
   .node.flash{animation:flash 1.7s ease}
+  .mod.flash-mod{animation:flashmod 1.7s ease}
+  @keyframes flashmod{0%,100%{box-shadow:var(--shadow)}25%,55%{box-shadow:0 0 0 4px rgba(242,184,7,.55),var(--shadow)}}
   @keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(242,184,7,0)}25%,55%{box-shadow:0 0 0 5px rgba(242,184,7,.6)}}
 
   /* ---------- sheet (lista / unidade) ---------- */
@@ -288,6 +299,7 @@
       <button class="vseg-b" data-view="unidade" onclick="setView('unidade')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Por unidade</button>
     </div>
     <span class="vhint" id="vhint"></span>
+    <button id="btnArrumar" class="vbtn" onclick="arrumarMapa()" title="Separar as áreas e ajustar à tela"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="7" rx="1.5"/><rect x="3" y="14" width="18" height="7" rx="1.5"/></svg>Organizar</button>
     <span id="statusPill" class="pill local" onclick="syncNow()" title="Clique para sincronizar"><span class="dot"></span><span id="statusText">Somente neste navegador</span></span>
   </div>
 
@@ -467,6 +479,7 @@ function render(){
   document.querySelector(".zoombar").style.display=isMap?"flex":"none";
   document.getElementById("hintbar").style.display=isMap?"block":"none";
   stage.style.cursor=isMap?"grab":"default";
+  document.getElementById("btnArrumar").style.display=isMap?"inline-flex":"none";
   document.getElementById("vhint").textContent = isMap?"":(view==="lista"?"Panorama linear — bom para leitura e impressão":"Quem atua em cada unidade — clique num nome para localizá-lo no mapa");
   if(isMap) renderMap(); else renderSheet();
 }
@@ -563,7 +576,7 @@ function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 function moduleEl(id){ return document.querySelector('.mod[data-mod="'+id+'"]'); }
 function moduleHeight(m){ const el=moduleEl(m.id); return el?el.offsetHeight:320; }
 function moduleBottom(){ return Math.max(0,...ws.modulos.map(m=>m.pos.y+moduleHeight(m))); }
-function autolayout(){ let y=60; ws.modulos.forEach(m=>{ m.pos.x=80; m.pos.y=y; y += moduleHeight(m)+60; }); save(); }
+function autolayout(){ let y=60; ws.modulos.forEach(m=>{ m.pos.x=80; m.pos.y=y; y += moduleHeight(m)+90; }); save(); }
 
 /* ---------- lookups de vínculo ---------- */
 function orgOf(nodeId){ let id=null; ws.modulos.filter(m=>m.tipo==="organograma").forEach(m=>{ if(nodeId&&findOrgNode(m,nodeId))id=m.id; }); return id; }
@@ -826,16 +839,48 @@ function fldArea(label,id,val,ph){ return '<div class="field"><label>'+esc(label
 /* ============================================================
    MÓDULOS (criar / renomear / excluir)
    ============================================================ */
+let novoTipo="tabela";
 function novoModulo(){
   if(mode!=="editar") setMode("editar");
-  const tipo = confirm("Criar um ORGANOGRAMA?\n\nOK = organograma · Cancelar = tabela") ? "organograma" : "tabela";
-  const pos={x:80,y:moduleBottom()+50};
-  let m;
-  if(tipo==="organograma"){ m={id:uid(),tipo,nome:"Novo organograma",pos,raiz:{id:uid(),funcao:"Topo",integrantes:"",unidade:"",registro:"",descricao:"",filhos:[]}}; }
-  else { m={id:uid(),tipo,nome:"Nova tabela",pos,colunas:[{id:uid(),nome:"Nome",tipo:"texto",opcoes:[]},{id:uid(),nome:"Status",tipo:"selo",opcoes:[{valor:"Ativo",cor:"verde"},{valor:"Inativo",cor:"vermelho"}]}],registros:[]}; }
-  ws.modulos.push(m); save(); render(); toast(tipo==="organograma"?"Organograma criado":"Tabela criada");
+  if(view!=="mapa") setView("mapa");
+  novoTipo="tabela";
+  const body=
+    '<div class="field"><label>Nome da área</label><input id="nm_nome" placeholder="Ex.: Convênios, Salas, Agenda…"></div>'+
+    '<div class="field"><label>Tipo</label><div class="typepick">'+
+      '<button type="button" class="tp on" data-t="tabela" onclick="pickTipo(\'tabela\')"><b>▤ Tabela</b><span>colunas e registros</span></button>'+
+      '<button type="button" class="tp" data-t="organograma" onclick="pickTipo(\'organograma\')"><b>◇ Organograma</b><span>árvore hierárquica</span></button>'+
+    '</div></div>';
+  openEditModal("Nova área no mapa",body,'<button class="mbtn" onclick="criarModulo()">Criar área</button>');
+  setTimeout(()=>{ const i=document.getElementById("nm_nome"); if(i)i.focus(); },60);
 }
-function renameModule(modId){ const m=getModule(modId); const v=prompt("Nome do módulo:",m.nome); if(v==null)return; m.nome=v.trim()||m.nome; save(); render(); }
+function pickTipo(t){ novoTipo=t; document.querySelectorAll(".tp").forEach(b=>b.classList.toggle("on",b.dataset.t===t)); }
+function criarModulo(){
+  const nomeIn=document.getElementById("nm_nome"); const nome=(nomeIn&&nomeIn.value.trim())|| (novoTipo==="organograma"?"Novo organograma":"Nova tabela");
+  const pos={x:80,y:moduleBottom()+70};
+  let m;
+  if(novoTipo==="organograma"){ m={id:uid(),tipo:"organograma",nome,pos,raiz:{id:uid(),funcao:"Topo",integrantes:"",unidade:"",registro:"",descricao:"",filhos:[]}}; }
+  else { m={id:uid(),tipo:"tabela",nome,pos,colunas:[{id:uid(),nome:"Nome",tipo:"texto",opcoes:[]},{id:uid(),nome:"Status",tipo:"selo",opcoes:[{valor:"Ativo",cor:"verde"},{valor:"Inativo",cor:"vermelho"}]}],registros:[]}; }
+  ws.modulos.push(m); save(); closeModal(); render(); focusModule(m.id); toast("Área criada");
+}
+function focusModule(modId){
+  requestAnimationFrame(()=>{
+    const el=moduleEl(modId); if(!el)return;
+    const st=stage.getBoundingClientRect(), r=el.getBoundingClientRect();
+    tx += st.width/2 - (r.left-st.left+r.width/2);
+    ty += 96 - (r.top-st.top);
+    applyZoom();
+    const el2=moduleEl(modId); if(el2){ el2.classList.add("flash-mod"); setTimeout(()=>el2.classList.remove("flash-mod"),1700); }
+  });
+}
+function arrumarMapa(){
+  if(view!=="mapa") setView("mapa");
+  autolayout(); render();
+  const stW=stage.clientWidth; let maxW=0; document.querySelectorAll(".mod").forEach(m=>maxW=Math.max(maxW,m.offsetWidth));
+  zoom = maxW>0 ? Math.min(.9, Math.max(.45, (stW-90)/maxW)) : 1;
+  tx = stW/2 - (80 + maxW/2)*zoom; ty = 24;
+  applyZoom(); toast("Mapa organizado");
+}
+function renameModule(modId){ const m=getModule(modId); const v=prompt("Nome da área:",m.nome); if(v==null)return; m.nome=v.trim()||m.nome; save(); render(); }
 function deleteModule(modId){ const m=getModule(modId); if(ws.modulos.length<=1){ toast("Mantenha ao menos um módulo."); return; } if(!confirm('Excluir o módulo "'+m.nome+'"?'))return; ws.modulos=ws.modulos.filter(x=>x.id!==modId); save(); closePanel(); render(); toast("Módulo excluído"); }
 
 /* ============================================================
