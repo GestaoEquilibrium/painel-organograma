@@ -222,6 +222,51 @@
   .mbtn:hover{background:var(--deep)}
   .mbtn.del{flex:0 0 auto;padding:11px 16px;background:#fdecea;color:var(--danger);border-color:#f3c7c0}
   .mbtn.del:hover{background:#f9d7d2}
+  .mbtn.ghost{background:#fff;color:var(--navy);border-color:#cdd9e8}
+  .mbtn.ghost:hover{background:var(--frost)}
+
+  /* ---------- abas do editor ---------- */
+  .mtabs{display:flex;gap:4px;padding:10px 18px 0;background:#fff;border-bottom:1px solid #eef2f8;position:sticky;top:0;z-index:2}
+  .mtab{padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);border:0;background:transparent;border-bottom:2px solid transparent;cursor:pointer}
+  .mtab:hover{color:var(--navy)}
+  .mtab.on{color:var(--navy);border-bottom-color:var(--teal)}
+  .tabpane{display:none}
+  .tabpane.on{display:block}
+  .photoctl{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .photoprev{width:68px;height:68px;border-radius:50%;background:var(--frost);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:22px;font-weight:700;border:2px solid #dbe6f2;flex-shrink:0}
+  .photoprev img{width:100%;height:100%;object-fit:cover}
+  .photobtns{display:flex;flex-direction:column;gap:6px}
+  .photobtns button{font-size:12px;padding:7px 12px;border-radius:8px;border:1px solid #cdd9e8;background:#fff;color:var(--navy);font-weight:600;cursor:pointer}
+  .photobtns button:hover{background:var(--frost)}
+  .photobtns button.rm{color:var(--danger);border-color:#f3c7c0}
+
+  /* ---------- dossiê (card) ---------- */
+  .modal.dossie{width:490px}
+  .dshead{padding:20px 22px;display:flex;gap:16px;align-items:center;position:relative;color:#fff;background:linear-gradient(135deg,var(--navy),var(--deep))}
+  .dsavatar{width:78px;height:78px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,.18);border:3px solid rgba(255,255,255,.55);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:#fff}
+  .dsavatar img{width:100%;height:100%;object-fit:cover}
+  .dsident{flex:1;min-width:0}
+  .dsident b{font-size:19px;display:block;line-height:1.15}
+  .dscargo{font-size:12.5px;opacity:.92;margin-top:2px;display:block}
+  .dsbadges{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .dsbadge{font-size:10.5px;font-weight:700;background:rgba(255,255,255,.22);padding:3px 10px;border-radius:999px;letter-spacing:.2px}
+  .dshead .x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.15);border:0;color:#fff;font-size:19px;width:28px;height:28px;border-radius:8px;cursor:pointer;line-height:1}
+  .dshead .x:hover{background:rgba(255,255,255,.28)}
+  .dsbody{padding:0;max-height:58vh;overflow:auto}
+  .dssec{padding:16px 22px;border-bottom:1px solid #eef2f8}
+  .dssec:last-child{border-bottom:0}
+  .ds-h{font-size:11.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .ds-h svg{width:15px;height:15px}
+  .ds-row{display:flex;padding:5px 0;font-size:13px}
+  .ds-row .k{color:var(--muted);width:118px;flex-shrink:0}
+  .ds-row .v{color:var(--ink);word-break:break-word}
+  .ds-block{margin:2px 0 12px}
+  .ds-block:last-child{margin-bottom:0}
+  .ds-block .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:4px}
+  .ds-block .v{font-size:13px;color:var(--ink);line-height:1.55;white-space:pre-wrap}
+  .ds-empty{color:var(--muted);font-size:12.5px;font-style:italic;line-height:1.5}
+  .ds-ref{color:var(--teal);cursor:pointer;font-weight:600}
+  .ds-ref:hover{text-decoration:underline}
   .drow{display:flex;padding:8px 0;border-bottom:1px solid #f0f4f9;font-size:13px}
   .drow:last-child{border:0}
   .drow .k{color:var(--muted);width:104px;flex-shrink:0}.drow .v{color:var(--ink)}
@@ -386,7 +431,7 @@ function resolveColor(cor){ if(!cor)return null; if(NODE_CORES[cor])return NODE_
 function uid(){ return "x"+Math.random().toString(36).slice(2,9); }
 
 function defaultWorkspace(){
-  const on=(id,funcao,integrantes,filhos)=>({id,funcao,integrantes:integrantes||"",unidade:"",registro:"",descricao:"",filhos:filhos||[]});
+  const on=(id,funcao,integrantes,filhos,extra)=>Object.assign({id,funcao,integrantes:integrantes||"",unidade:"",registro:"",descricao:"",filhos:filhos||[]},extra||{});
   const org = {
     id:uid(), tipo:"organograma", nome:"Organograma institucional", pos:{x:80,y:60},
     raiz: on("conselho","Conselho de Sócios Equilibrium","Wessilon Marques • Michele Marques",[
@@ -406,10 +451,10 @@ function defaultWorkspace(){
             on("apl3","Neuropsicólogo(a) Aplicador(a)","Karolina"),
             on("apl4","Neuropsicólogo(a) Aplicador(a)","Taís"),
             on("est1","Estagiária","Mariana"),on("est2","Estagiária","Natália"),
-          ]),
+          ],{descricao:"Setor responsável pela avaliação neuropsicológica: aplicação, correção e elaboração de laudos.",responsabilidades:"Aplicação de testes; correção; redação de laudos conforme CFP 06/2019.",competencias:"Testagem neuropsicológica; interpretação de resultados; escrita técnica."}),
           on("psic","Psicologia (clínica)"),
           on("med","Área Médica","",[on("psiq","Psiquiatria","Dr. Luan"),on("ger","Geriatria"),on("cg","Clínico Geral")]),
-        ]),
+        ],{unidade:"EQ1",descricao:"Coordena a avaliação e o diagnóstico neuropsicológico do Grupo, garantindo o padrão técnico e o alinhamento entre as unidades.",responsabilidades:"Supervisão de aplicadores e estagiários; validação de laudos; gestão de casos e da agenda clínica.",competencias:"Neuropsicologia clínica; supervisão de equipe; gestão de processos assistenciais.",cargaHoraria:"40h semanais"}),
         on("terap","Gerência Terapêutica","",[
           on("ter","Terapias","",[on("aba","ABA","",[on("abae","Estagiário(a)")])]),
           on("fono","Fonoaudiologia"),on("psped","Psicopedagogia"),
@@ -747,21 +792,21 @@ document.getElementById("world").addEventListener("mouseout",e=>{ if(e.target.cl
 function hideTip(){ tip.style.opacity=0; }
 
 /* ---------- seleção ---------- */
-function onSelectNode(modId,nodeId){ if(mode==="ver") openNodeModal(modId,nodeId); else openNodePanel(modId,nodeId); }
+function onSelectNode(modId,nodeId){ if(mode==="ver") openDossie(modId,nodeId); else openNodePanel(modId,nodeId); }
 function onSelectRecord(modId,regId){ if(mode==="ver") openRecordModal(modId,regId); else openRecordPanel(modId,regId); }
 
 /* ============================================================
    MODAIS (visualizar)
    ============================================================ */
 const overlay=document.getElementById("overlay"), modalEl=document.getElementById("modal");
-function closeModal(){ overlay.classList.remove("open"); modalEl.classList.remove("wide"); if(sel){ sel=null; render(); } }
-function openEditModal(title,bodyHTML,footerHTML){ modalEl.classList.add("wide"); modalEl.innerHTML='<div class="mh"><div><b>'+esc(title)+'</b></div><button class="x" onclick="closeModal()">×</button></div><div class="mbd edit">'+bodyHTML+'</div><div class="mfoot">'+footerHTML+'</div>'; overlay.classList.add("open"); }
+function closeModal(){ overlay.classList.remove("open"); modalEl.className="modal"; if(sel){ sel=null; render(); } }
+function openEditModal(title,bodyHTML,footerHTML){ modalEl.className="modal wide"; modalEl.innerHTML='<div class="mh"><div><b>'+esc(title)+'</b></div><button class="x" onclick="closeModal()">×</button></div><div class="mbd edit">'+bodyHTML+'</div><div class="mfoot">'+footerHTML+'</div>'; overlay.classList.add("open"); }
 function drow(k,v){ return '<div class="drow"><span class="k">'+esc(k)+'</span><span class="v">'+(v||"—")+'</span></div>'; }
 function openNodeModal(modId,nodeId){
   const d=findOrgNode(getModule(modId),nodeId).node;
   const refs=nodeReferences(nodeId);
   const refHtml = refs.length ? '<div class="drow"><span class="k">Aparece em</span><span class="v">'+refs.map(x=>'<span class="reflink" onclick="openRecordModal(\''+x.modId+'\',\''+x.regId+'\')">'+esc(x.mod)+' → '+esc(x.titulo)+'</span>').join("<br>")+'</span></div>' : "";
-  modalEl.classList.remove("wide");
+  modalEl.className="modal";
   modalEl.innerHTML='<div class="mh"><div><b>'+esc(d.funcao)+'</b><small>'+esc(d.unidade||"Grupo Equilibrium")+'</small></div><button class="x" onclick="closeModal()">×</button></div>'+
     '<div class="mbd">'+drow("Integrante(s)",esc(d.integrantes))+(d.registro?drow("Registro",esc(d.registro)):"")+drow("Unidade",esc(d.unidade))+(d.descricao?drow("Descrição",esc(d.descricao)):"")+refHtml+'</div>';
   overlay.classList.add("open");
@@ -770,8 +815,51 @@ function openRecordModal(modId,regId){
   const m=getModule(modId); const reg=m.registros.find(r=>r.id===regId);
   let rows=""; m.colunas.forEach(c=>{ const h=cellHTML(c,reg.valores[c.id]); rows+=drow(c.nome,h||"—"); });
   const titulo = reg.valores[m.colunas[0].id] || m.nome;
-  modalEl.classList.remove("wide");
+  modalEl.className="modal";
   modalEl.innerHTML='<div class="mh"><div><b>'+esc(titulo)+'</b><small>'+esc(m.nome)+'</small></div><button class="x" onclick="closeModal()">×</button></div><div class="mbd">'+rows+'</div>';
+  overlay.classList.add("open");
+}
+
+/* ---- dossiê (card de visualização) ---- */
+function fmtDate(v){ if(!v)return ""; try{ return new Date(v+"T00:00:00").toLocaleDateString("pt-BR"); }catch(e){ return v; } }
+function initials(s){ const p=String(s||"").trim().split(/\s+/).filter(Boolean); if(!p.length)return "•"; return (p[0][0]+(p.length>1?p[p.length-1][0]:"")).toUpperCase(); }
+function dsicon(name){ const m={func:'<path d="M4 7h16M4 12h16M4 17h10"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/>',link:'<path d="M9.5 13.5a4 4 0 0 0 5.7 0l2-2a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14.5 10.5a4 4 0 0 0-5.7 0l-2 2a4 4 0 0 0 5.7 5.7l1-1"/>'}; return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(m[name]||"")+'</svg>'; }
+function dsrow(k,v){ return '<div class="ds-row"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>'; }
+function dsblock(k,v){ return '<div class="ds-block"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>'; }
+function openDossie(modId,nodeId){
+  const node=findOrgNode(getModule(modId),nodeId).node; const p=node.perfil||{};
+  const nome=p.nomeCompleto||node.integrantes||node.funcao||"—";
+  const cargo=p.cargo||node.funcao||"";
+  const custom=resolveColor(node.cor);
+  const headStyle=custom?'style="background:'+custom.bg+';color:'+custom.fg+'"':"";
+  const avatar=p.foto?'<img src="'+p.foto+'" alt="">':esc(initials(p.nomeCompleto||node.integrantes||node.funcao));
+  let badges=""; if(node.unidade)badges+='<span class="dsbadge">'+esc(node.unidade)+'</span>'; if(node.registro)badges+='<span class="dsbadge">'+esc(node.registro)+'</span>'; if(p.admissao)badges+='<span class="dsbadge">Desde '+esc(fmtDate(p.admissao))+'</span>';
+  let func="";
+  if(node.descricao)func+=dsblock("Descrição",node.descricao);
+  if(node.responsabilidades)func+=dsblock("Responsabilidades",node.responsabilidades);
+  if(node.competencias)func+=dsblock("Competências",node.competencias);
+  if(node.cargaHoraria)func+=dsrow("Carga horária",node.cargaHoraria);
+  if(!func)func='<div class="ds-empty">Sem detalhes da função ainda. Entre no modo Editar para preencher.</div>';
+  let prof="";
+  if(p.nomeCompleto&&p.nomeCompleto!==node.integrantes)prof+=dsrow("Nome completo",p.nomeCompleto);
+  if(p.nascimento)prof+=dsrow("Nascimento",fmtDate(p.nascimento));
+  if(p.email)prof+=dsrow("E-mail",p.email);
+  if(p.telefone)prof+=dsrow("Telefone",p.telefone);
+  if(p.endereco)prof+=dsrow("Endereço",p.endereco);
+  if(p.admissao)prof+=dsrow("Admissão",fmtDate(p.admissao));
+  if(p.formacao)prof+=dsblock("Formação acadêmica",p.formacao);
+  if(p.observacoes)prof+=dsblock("Observações",p.observacoes);
+  if(!prof)prof='<div class="ds-empty">Dados do profissional ainda não preenchidos. Entre no modo Editar e abra a aba “Dossiê profissional”.</div>';
+  const refs=nodeReferences(nodeId);
+  const refHtml = refs.length ? '<div class="dssec"><div class="ds-h">'+dsicon("link")+'Aparece em</div>'+refs.map(x=>'<div class="ds-row"><span class="v ds-ref" onclick="openRecordModal(\''+x.modId+'\',\''+x.regId+'\')">'+esc(x.mod)+" → "+esc(x.titulo)+'</span></div>').join("")+'</div>' : "";
+  modalEl.className="modal dossie";
+  modalEl.innerHTML=
+    '<div class="dshead" '+headStyle+'><div class="dsavatar">'+avatar+'</div><div class="dsident"><b>'+esc(nome)+'</b><span class="dscargo">'+esc(cargo)+'</span><div class="dsbadges">'+badges+'</div></div><button class="x" onclick="closeModal()">×</button></div>'+
+    '<div class="dsbody">'+
+      '<div class="dssec"><div class="ds-h">'+dsicon("func")+'Função / cargo</div>'+func+'</div>'+
+      '<div class="dssec"><div class="ds-h">'+dsicon("user")+'Profissional</div>'+prof+'</div>'+
+      refHtml+
+    '</div>';
   overlay.classList.add("open");
 }
 
@@ -783,14 +871,17 @@ function closePanel(){ closeModal(); }
 /* ---- nó do organograma ---- */
 function openNodePanel(modId,nodeId){
   sel={tipo:"node",modId,nodeId};
-  const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId);
+  const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId); const p=node.perfil||{};
   const isRoot=!parent; const sibs=parent?parent.filhos:[mod.raiz]; const idx=sibs.indexOf(node);
-  const body=
+  const funcTab=
     fld("Função / setor","node_funcao",node.funcao,"text","Ex.: Gerência Clínica")+
     fld("Integrante(s)","node_integrantes",node.integrantes,"text","Nome — em branco se indefinido")+
     fld("Unidade","node_unidade",node.unidade,"text","EQ1, EQ2, Institucional…")+
     fld("Registro (CRP/CRM)","node_registro",node.registro,"text","")+
     fldArea("Descrição","node_descricao",node.descricao,"O que este setor faz…")+
+    fldArea("Responsabilidades","node_responsabilidades",node.responsabilidades,"Principais atribuições do cargo…")+
+    fldArea("Competências","node_competencias",node.competencias,"Habilidades exigidas…")+
+    fld("Carga horária","node_cargaHoraria",node.cargaHoraria,"text","Ex.: 40h semanais")+
     colorSwatches(node)+
     '<div class="grp"><div class="lbl">Estrutura</div><div class="pbtns">'+
       '<button class="pbtn wide" onclick="nodeAdd(\'child\')">＋ Subordinado</button>'+
@@ -800,9 +891,33 @@ function openNodePanel(modId,nodeId){
       '<button class="pbtn" onclick="nodeMove(1)" '+(isRoot||idx>=sibs.length-1?"disabled":"")+'>Mover →</button>'+
       '<button class="pbtn del wide" onclick="nodeDel()" '+(isRoot?"disabled":"")+'>🗑 Excluir caixa</button>'+
     '</div></div>';
-  openEditModal("Editar caixa",body,'<button class="mbtn" onclick="closeModal()">Concluir</button>');
-  bindNodeFields(modId,nodeId);
+  const av=p.foto?'<img src="'+p.foto+'">':esc(initials(p.nomeCompleto||node.integrantes||node.funcao));
+  const dossieTab=
+    '<div class="photoctl"><div class="photoprev" id="perf_prev">'+av+'</div><div class="photobtns">'+
+      '<button type="button" onclick="document.getElementById(\'perf_file\').click()">Escolher foto</button>'+
+      '<button type="button" class="rm" onclick="removePhoto()">Remover</button></div>'+
+      '<input type="file" id="perf_file" accept="image/*" style="display:none" onchange="onPhoto(event)"></div>'+
+    fld("Nome completo","perf_nomeCompleto",p.nomeCompleto,"text","")+
+    fld("Cargo","perf_cargo",p.cargo,"text","Ex.: Coordenadora Clínica")+
+    fld("Nascimento","perf_nascimento",p.nascimento,"date","")+
+    fld("E-mail","perf_email",p.email,"email","")+
+    fld("Telefone","perf_telefone",p.telefone,"tel","")+
+    fld("Endereço","perf_endereco",p.endereco,"text","")+
+    fldArea("Formação acadêmica","perf_formacao",p.formacao,"Graduação, pós-graduação, especializações…")+
+    fld("Admissão","perf_admissao",p.admissao,"date","")+
+    fldArea("Observações gerais","perf_observacoes",p.observacoes,"");
+  const body=
+    '<div class="mtabs"><button class="mtab on" onclick="switchTab(0)">Função</button><button class="mtab" onclick="switchTab(1)">Dossiê profissional</button></div>'+
+    '<div class="tabpane on" id="tabp0">'+funcTab+'</div>'+
+    '<div class="tabpane" id="tabp1">'+dossieTab+'</div>';
+  openEditModal("Editar caixa",body,'<button class="mbtn ghost" onclick="openDossie(\''+modId+'\',\''+nodeId+'\')">Ver dossiê</button><button class="mbtn" onclick="closeModal()">Concluir</button>');
+  bindNodeFields(modId,nodeId); bindPerfilFields(modId,nodeId);
 }
+function switchTab(i){ modalEl.querySelectorAll(".mtab").forEach((b,j)=>b.classList.toggle("on",j===i)); modalEl.querySelectorAll(".tabpane").forEach(pane=>pane.classList.toggle("on",pane.id==="tabp"+i)); }
+function bindPerfilFields(modId,nodeId){ const map={perf_nomeCompleto:"nomeCompleto",perf_cargo:"cargo",perf_nascimento:"nascimento",perf_email:"email",perf_telefone:"telefone",perf_endereco:"endereco",perf_formacao:"formacao",perf_admissao:"admissao",perf_observacoes:"observacoes"}; Object.keys(map).forEach(fid=>{ const el=document.getElementById(fid); if(!el)return; el.oninput=()=>{ const {node}=findOrgNode(getModule(modId),nodeId); (node.perfil||(node.perfil={}))[map[fid]]=el.value; save(); }; }); }
+function readPhoto(file,cb){ const r=new FileReader(); r.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=380; let w=img.width,h=img.height; const s=Math.min(1,max/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s); const c=document.createElement("canvas"); c.width=w; c.height=h; c.getContext("2d").drawImage(img,0,0,w,h); cb(c.toDataURL("image/jpeg",0.82)); }; img.src=r.result; }; r.readAsDataURL(file); }
+function onPhoto(ev){ const f=ev.target.files&&ev.target.files[0]; if(!f||!sel)return; readPhoto(f,data=>{ const {node}=findOrgNode(getModule(sel.modId),sel.nodeId); (node.perfil||(node.perfil={})).foto=data; save(); const prev=document.getElementById("perf_prev"); if(prev)prev.innerHTML='<img src="'+data+'">'; }); ev.target.value=""; }
+function removePhoto(){ if(!sel)return; const {node}=findOrgNode(getModule(sel.modId),sel.nodeId); if(node.perfil)delete node.perfil.foto; save(); const prev=document.getElementById("perf_prev"); if(prev)prev.textContent=initials((node.perfil&&node.perfil.nomeCompleto)||node.integrantes||node.funcao); }
 function colorSwatches(node){
   const isHex=node.cor&&/^#/.test(node.cor);
   let s='<button class="swatch reset'+(node.cor?"":" on")+'" data-cor="padrao" title="Padrão (cor do nível)" onclick="setNodeColor(\'padrao\')">↺</button>';
@@ -825,7 +940,7 @@ function setNodeColor(value){
 }
 function addChildTo(modId,nodeId){ sel={tipo:"node",modId,nodeId}; nodeAdd("child"); }
 function bindNodeFields(modId,nodeId){
-  const map={node_funcao:"funcao",node_integrantes:"integrantes",node_unidade:"unidade",node_registro:"registro",node_descricao:"descricao"};
+  const map={node_funcao:"funcao",node_integrantes:"integrantes",node_unidade:"unidade",node_registro:"registro",node_descricao:"descricao",node_responsabilidades:"responsabilidades",node_competencias:"competencias",node_cargaHoraria:"cargaHoraria"};
   Object.keys(map).forEach(fid=>{ const el=document.getElementById(fid); if(!el)return; el.oninput=()=>{ const node=findOrgNode(getModule(modId),nodeId).node; node[map[fid]]=el.value; save(); const card=document.querySelector('.node[data-node="'+nodeId+'"]'); if(card){ if(map[fid]==="funcao")card.querySelector(".r").textContent=el.value||"(sem função)"; if(map[fid]==="integrantes"){const nn=card.querySelector(".n");nn.textContent=el.value||"— definir —";nn.className="n"+(el.value?"":" empty");} } }; });
 }
 function nodeAdd(kind){ const {modId,nodeId}=sel; const mod=getModule(modId); const {node,parent}=findOrgNode(mod,nodeId); const c={id:uid(),funcao:"Nova função",integrantes:"",unidade:"",registro:"",descricao:"",filhos:[]}; if(kind==="child"){ node.filhos.push(c); } else { if(!parent)return; parent.filhos.splice(parent.filhos.indexOf(node)+1,0,c); } save(); sel={tipo:"node",modId,nodeId:c.id}; render(); openNodePanel(modId,c.id); toast(kind==="child"?"Subordinado adicionado":"Par adicionado"); }
